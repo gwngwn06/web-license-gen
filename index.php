@@ -97,28 +97,37 @@
 
             <div class="fw-medium fs-5 mt-4 mb-2">Customer Information</div>
             <div class="mb-2">
-                <label for="companyName" class="form-label text-secondary fw-medium">Company Name</label>
-                <input id="companyName" name="companyName" type="text" class="form-control rounded-3 border-2">
+                <label for="companyName" class="form-label text-secondary fw-medium">
+                    <span class="text-danger">*</span>
+                    Company Name</label>
+                <input id="companyName" name="companyName" type="text" class="form-control rounded-3 border-2" required>
             </div>
             <div class="row mb-2">
                 <div class="col">
-                    <label for="customerName" class="form-label text-secondary fw-medium">Name</label>
-                    <input name="customerName" type="text" class="form-control rounded-3 border-2">
+                    <label for="customerName" class="form-label text-secondary fw-medium">
+                        <span class="text-danger">*</span>
+                        Name</label>
+                    <input name="customerName" type="text" class="form-control rounded-3 border-2" required>
                 </div>
                 <div class="col">
-                    <label for="customerEmailAddress" class="form-label text-secondary fw-medium">Email Address</label>
-                    <input name="customerEmailAddress" type="text" class="form-control rounded-3 border-2">
+                    <label for="customerEmailAddress" class="form-label text-secondary fw-medium">
+                        <span class="text-danger">*</span>
+                        Email Address</label>
+                    <input name="customerEmailAddress" type="text" class="form-control rounded-3 border-2" required>
                 </div>
             </div>
             <div class="row">
                 <div class="col">
-                    <label for="customerAddress" class="form-label text-secondary fw-medium">Address</label>
-                    <input name="customerAddress" type="text" class="form-control rounded-3 border-2">
+                    <label for="customerAddress" class="form-label text-secondary fw-medium">
+                        <span class="text-danger">*</span>
+                        Address</label>
+                    <input name="customerAddress" type="text" class="form-control rounded-3 border-2" required>
                 </div>
                 <div class="col">
-                    <label for="customerContactNumber" class="form-label text-secondary fw-medium">Contact
-                        Number</label>
-                    <input name="customerContactNumber" type="text" class="form-control rounded-3 border-2">
+                    <label for="customerContactNumber" class="form-label text-secondary fw-medium">
+                        <span class="text-danger">*</span>
+                        Contact Number</label>
+                    <input name="customerContactNumber" type="text" class="form-control rounded-3 border-2" required>
                 </div>
             </div>
 
@@ -203,8 +212,7 @@
                     style="border-bottom: 1px solid var(--bs-secondary); border-width: 1px;  opacity: 0.2;">
                 </div>
                 <button type="submit" class="btn btn-primary rounded-3">
-                    <img src="./assets/icons/download.svg" width="24" height="24" />
-                    Download License
+                    <span id="fileDownloadText">Generate & Download License File</span>
                 </button>
             </div>
         </form>

@@ -1,41 +1,50 @@
 const LicenseGenerator = {
     _enc: new TextEncoder(),
+    _secretkey: "mySecretKey",
+    _initialIssuedDate: null,
+    _annualMaintenanceExpDate: "",
 
     init() {
         this.onSubmitFormEvent();
-        this.numberValidationEvent();
         this.licenseUploadEvent();
+        this.numberValidationEvent();
     },
 
     onSubmitFormEvent() {
         let data = null;
-        let initialIssuedDate = null;
         let companyName = null;
-
+        let isLicenseFileUpdated = true;
         const form = document.getElementById("generateLicenseForm")
+
         form.addEventListener("submit", (e) => {
             if (!form.checkValidity()) return;
             e.preventDefault();
 
             const formData = new FormData(e.target);
-            initialIssuedDate = Date.now();
             companyName = formData.get("companyName");
-            formData.append("licenseInitialIssuedDate", initialIssuedDate)
+            if (this._initialIssuedDate === null || this._initialIssuedDate === "") {
+                isLicenseFileUpdated = false;
+                this._initialIssuedDate = Date.now();
+            }
+            formData.append("lastLicenseUpdateDate", Date.now());
+            formData.append("licenseInitialIssuedDate", this._initialIssuedDate);
+            formData.append("annualMaintenanceExpDatate", this._annualMaintenanceExpDate);
 
             data = Object.fromEntries(formData.entries());
-            form.reset();
-            this._showDownloadSecretKeyModal();
-        })
-
-        const secretkeyForm = document.getElementById("secretkeyForm");
-        secretkeyForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-
-            const secretKey = document.getElementById("secretkeyInput").value;
-            if (!secretKey) return;
-
-            this._encrypt(JSON.stringify(data), secretKey).then(({ savedCiphertext, iv, salt }) => {
-                const dataToSave = {
+            // this._showDownloadSecretKeyModal();
+            const unencryptedData = {
+                data,
+                iv: null,
+                salt: null,
+                "kdf": {
+                    "name": "PBKDF2",
+                    "iterations": 100000,
+                    "hash": "SHA-256",
+                    "keyLength": 256
+                }
+            }
+            this._encrypt(JSON.stringify(data), this._secretkey).then(({ savedCiphertext, iv, salt }) => {
+                const encryptedData = {
                     data: btoa(String.fromCharCode(...savedCiphertext)),
                     iv: btoa(String.fromCharCode(...iv)),
                     salt: btoa(String.fromCharCode(...salt)),
@@ -46,21 +55,56 @@ const LicenseGenerator = {
                         "keyLength": 256
                     }
                 };
-                this._downloadJSONLicenseFile(dataToSave, companyName, initialIssuedDate);
-                data = initialIssuedDate = companyName = null;
+                console.log("download unencryptedData: ", unencryptedData);
+                console.log("download encryptedData: ", encryptedData);
+                this._downloadJSONLicenseFile(unencryptedData, "UNENCRYPTED_" + companyName, this._initialIssuedDate);
+                this._downloadJSONLicenseFile(encryptedData, companyName, this._initialIssuedDate);
+                form.reset();
 
-                this._hideDownloadSecretKeyModal();
-
-                const toastBootstrap = bootstrap.Toast.getOrCreateInstance(document.getElementById("liveToast"))
-                toastBootstrap.show();
+                // this._hideDownloadSecretKeyModal();
+                if (isLicenseFileUpdated) {
+                    this._showToastMessage("Your license file has been updated.", "info");
+                } else {
+                    this._showToastMessage(null, "info");
+                }
+                document.getElementById("fileDownloadText").textContent = "Generate & Download License File";
+                data = this._initialIssuedDate = companyName = null;
+                isLicenseFileUpdated = true;
             });
+        })
 
-        });
+        // const secretkeyForm = document.getElementById("secretkeyForm");
+        // secretkeyForm.addEventListener("submit", (e) => {
+        //     e.preventDefault();
+
+        //     const secretKey = document.getElementById("secretkeyInput").value;
+        //     if (!secretKey) return;
+
+        //     this._encrypt(JSON.stringify(data), secretKey).then(({ savedCiphertext, iv, salt }) => {
+        //         const dataToSave = {
+        //             data: btoa(String.fromCharCode(...savedCiphertext)),
+        //             iv: btoa(String.fromCharCode(...iv)),
+        //             salt: btoa(String.fromCharCode(...salt)),
+        //             "kdf": {
+        //                 "name": "PBKDF2",
+        //                 "iterations": 100000,
+        //                 "hash": "SHA-256",
+        //                 "keyLength": 256
+        //             }
+        //         };
+        //         this._downloadJSONLicenseFile(dataToSave, companyName, initialIssuedDate);
+        //         form.reset();
+        //         data = initialIssuedDate = companyName = null;
+
+        //         this._hideDownloadSecretKeyModal();
+        //         this._showToastMessage(null, "info");
+        //     });
+
+        // });
     },
 
     licenseUploadEvent() {
         let encrypted = null;
-
         const licenseUpload = document.getElementById("licenseUpload");
 
         licenseUpload.addEventListener("click", (e) => {
@@ -74,89 +118,49 @@ const LicenseGenerator = {
 
             reader.onload = (event) => {
                 encrypted = JSON.parse(event.target.result);
-                console.log(encrypted);
                 if (encrypted.data && encrypted.iv && encrypted.salt) {
-                    this._showUploadSecretKeyModal();
+                    // this._showUploadSecretKeyModal();
+                    this._decrypt(encrypted.data, encrypted.iv, encrypted.salt, this._secretkey).then((decryptedData) => {
+                        console.log("decryptedData: ", decryptedData);
+                        this._initialIssuedDate = decryptedData.licenseInitialIssuedDate;
+                        // this._hideUploadSecretKeyModal();
+                        this._showToastMessage(null, "success");
+
+                        for (const [key, value] of Object.entries(decryptedData)) {
+                            const input = document.querySelector(`input[name="${key}"]`);
+                            if (input) {
+                                input.value = value;
+                            }
+                        }
+
+                        document.getElementById("fileDownloadText").textContent = "Update License File";
+                    }).catch((error) => {
+                        // this._hideUploadSecretKeyModal();
+                        console.log(error);
+                        this._showToastMessage(null, "error");
+                    }).finally(() => {
+                        encrypted = null;
+                        // secretKeyInput.value = null;
+                    });
                 } else {
-                    console.error("Invalid license file format.");
+                    // console.error("Invalid license file format.");
+                    this._showToastMessage("Invalid license file format.", "error");
                     return;
                 }
-                // const decryptedData = this._decrypt(data.data, data.iv, data.salt, secretKey);
-                // console.log(decryptedData);
             };
             reader.readAsText(file);
         });
 
-        const uploadSecretkeyForm = document.getElementById("uploadSecretKeyForm");
-        uploadSecretkeyForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-            const secretKeyInput = document.getElementById("uploadSecretKeyInput");
-            const secretKey = secretKeyInput.value;
-            if (!secretKey) return;
-
-            this._decrypt(encrypted.data, encrypted.iv, encrypted.salt, secretKey).then((decryptedData) => {
-                this._hideUploadSecretKeyModal();
-                const toastMessage = document.getElementById("liveToast");
-                const toastBody = toastMessage.querySelector(".toast-body");
-                const toastHeader = toastMessage.querySelector(".toast-header-text");
-                toastHeader.innerHTML = "Success";
-                toastBody.innerHTML = "License file uploaded successfully.";
-                toastMessage.classList.remove("text-bg-primary");
-                toastMessage.classList.remove("text-bg-danger");
-                toastMessage.classList.add("text-bg-success");
-
-                const toastBootstrap = bootstrap.Toast.getOrCreateInstance(document.getElementById("liveToast"))
-                toastBootstrap.show();
-
-                for (const [key, value] of Object.entries(decryptedData)) {
-                    const input = document.querySelector(`input[name="${key}"]`);
-                    if (input) {
-                        input.value = value;
-                    }
-                }
-                console.log(decryptedData);
-            }).catch((error) => {
-                this._hideUploadSecretKeyModal();
-                //update toast message to show error
-                const toastMessage = document.getElementById("liveToast");
-                const toastBody = toastMessage.querySelector(".toast-body");
-                const toastHeader = toastMessage.querySelector(".toast-header-text");
-                toastHeader.innerHTML = "Error";
-                toastBody.innerHTML = "Invalid secret key. Please try again.";
-                toastMessage.classList.remove("text-bg-primary");
-                toastMessage.classList.remove("text-bg-success");
-                toastMessage.classList.add("text-bg-danger");
-
-                const toastBootstrap = bootstrap.Toast.getOrCreateInstance(document.getElementById("liveToast"))
-                toastBootstrap.show();
-            }).finally(() => {
-                encrypted = null;
-                secretKeyInput.value = null; // Clear the secret key input
-            });
-        });
+        // const uploadSecretkeyForm = document.getElementById("uploadSecretKeyForm");
+        // uploadSecretkeyForm.addEventListener("submit", (e) => {
+        //     e.preventDefault();
+        //     const secretKeyInput = document.getElementById("uploadSecretKeyInput");
+        //     const secretKey = secretKeyInput.value;
+        //     if (!secretKey) return;
+        // });
 
     },
 
-
-    _showDownloadSecretKeyModal() {
-        const secretkeyModal =  bootstrap.Modal.getOrCreateInstance(document.getElementById('secretkeyModal'));
-        secretkeyModal.show();
-    },
-
-    _hideDownloadSecretKeyModal() {
-        const secretkeyModal =  bootstrap.Modal.getOrCreateInstance(document.getElementById('secretkeyModal'));
-        secretkeyModal.hide();
-    },
-
-    _showUploadSecretKeyModal() {
-        const uploadSecretKeyModal =  bootstrap.Modal.getOrCreateInstance(document.getElementById('uploadSecretKeyModal'));
-        uploadSecretKeyModal.show();
-    },
-
-    _hideUploadSecretKeyModal() {
-        const uploadSecretKeyModal =  bootstrap.Modal.getOrCreateInstance(document.getElementById('uploadSecretKeyModal'));
-        uploadSecretKeyModal.hide();
-    },
 
     _getKeyMaterial(password) {
         return crypto.subtle.importKey(
@@ -214,6 +218,54 @@ const LicenseGenerator = {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+    },
+
+    // _showDownloadSecretKeyModal() {
+    //     const secretkeyModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('secretkeyModal'));
+    //     secretkeyModal.show();
+    // },
+
+    // _hideDownloadSecretKeyModal() {
+    //     const secretkeyModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('secretkeyModal'));
+    //     secretkeyModal.hide();
+    // },
+
+    // _showUploadSecretKeyModal() {
+    //     const uploadSecretKeyModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('uploadSecretKeyModal'));
+    //     uploadSecretKeyModal.show();
+    // },
+
+    // _hideUploadSecretKeyModal() {
+    //     const uploadSecretKeyModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('uploadSecretKeyModal'));
+    //     uploadSecretKeyModal.hide();
+    // },
+
+    _showToastMessage(message, type) {
+        const toastMessage = document.getElementById("liveToast");
+        const toastBody = toastMessage.querySelector(".toast-body");
+        const toastHeader = toastMessage.querySelector(".toast-header-text");
+        if (type === "success") {
+            toastHeader.innerHTML = message ?? "Success";
+            toastBody.innerHTML = "License file uploaded successfully.";
+            toastMessage.classList.remove("text-bg-primary");
+            toastMessage.classList.remove("text-bg-danger");
+            toastMessage.classList.add("text-bg-success");
+        } else if (type === "info") {
+            toastHeader.innerHTML = "License Generated";
+            toastBody.innerHTML = message ?? "Your license has been generated.";
+            toastMessage.classList.remove("text-bg-success");
+            toastMessage.classList.remove("text-bg-danger");
+            toastMessage.classList.add("text-bg-primary");
+        } else if (type === "error") {
+            toastHeader.innerHTML = "Error";
+            toastBody.innerHTML = message ?? "Invalid secret key. Please try again.";
+            toastMessage.classList.remove("text-bg-primary");
+            toastMessage.classList.remove("text-bg-success");
+            toastMessage.classList.add("text-bg-danger");
+
+        }
+        const toastBootstrap = bootstrap.Toast.getOrCreateInstance(document.getElementById("liveToast"))
+        toastBootstrap.show();
     },
 
     numberValidationEvent() {
