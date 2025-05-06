@@ -2,7 +2,7 @@ const LicenseGenerator = {
     _enc: new TextEncoder(),
     _secretkey: "mySecretKey",
     _initialIssuedDate: null,
-    _annualMaintenanceExpDate: "",
+    _annualMaintenanceExpDate: null,
 
     init() {
         this.onSubmitFormEvent();
@@ -26,9 +26,9 @@ const LicenseGenerator = {
                 isLicenseFileUpdated = false;
                 this._initialIssuedDate = Date.now();
             }
-            formData.append("lastLicenseUpdateDate", Date.now());
-            formData.append("licenseInitialIssuedDate", this._initialIssuedDate);
-            formData.append("annualMaintenanceExpDatate", this._annualMaintenanceExpDate);
+            // formData.append("lastLicenseUpdateDate", Date.now());
+            // formData.append("licenseInitialIssuedDate", this._initialIssuedDate);
+            formData.append("annualMaintenanceExpDate", this._annualMaintenanceExpDate);
 
             data = Object.fromEntries(formData.entries());
             // this._showDownloadSecretKeyModal();
@@ -43,34 +43,51 @@ const LicenseGenerator = {
                     "keyLength": 256
                 }
             }
-            this._encrypt(JSON.stringify(data), this._secretkey).then(({ savedCiphertext, iv, salt }) => {
-                const encryptedData = {
-                    data: btoa(String.fromCharCode(...savedCiphertext)),
-                    iv: btoa(String.fromCharCode(...iv)),
-                    salt: btoa(String.fromCharCode(...salt)),
-                    "kdf": {
-                        "name": "PBKDF2",
-                        "iterations": 100000,
-                        "hash": "SHA-256",
-                        "keyLength": 256
-                    }
-                };
-                console.log("download unencryptedData: ", unencryptedData);
-                console.log("download encryptedData: ", encryptedData);
-                this._downloadJSONLicenseFile(unencryptedData, "UNENCRYPTED_" + companyName, this._initialIssuedDate);
-                this._downloadJSONLicenseFile(encryptedData, companyName, this._initialIssuedDate);
-                form.reset();
 
-                // this._hideDownloadSecretKeyModal();
-                if (isLicenseFileUpdated) {
-                    this._showToastMessage("Your license file has been updated.", "info");
-                } else {
-                    this._showToastMessage(null, "info");
-                }
-                document.getElementById("fileDownloadText").textContent = "Generate & Download License File";
-                data = this._initialIssuedDate = companyName = null;
-                isLicenseFileUpdated = true;
-            });
+            fetch("./licenses/license.php", {
+                method: "POST",
+                body: formData,
+            })
+                .then((response) => response.json())
+                .then((result) => {
+                    console.log("License file saved successfully:", result);
+                    this._initialIssuedDate = result.created_at;
+                    data["licenseId"] = result.id;
+                    this._encrypt(JSON.stringify(data), this._secretkey).then(({ savedCiphertext, iv, salt }) => {
+                        const encryptedData = {
+                            data: btoa(String.fromCharCode(...savedCiphertext)),
+                            iv: btoa(String.fromCharCode(...iv)),
+                            salt: btoa(String.fromCharCode(...salt)),
+                            "kdf": {
+                                "name": "PBKDF2",
+                                "iterations": 100000,
+                                "hash": "SHA-256",
+                                "keyLength": 256
+                            }
+                        };
+                        console.log("download unencryptedData: ", unencryptedData);
+                        console.log("download encryptedData:", encryptedData);
+                        this._downloadJSONLicenseFile(unencryptedData, "UNENCRYPTED_" + companyName, this._initialIssuedDate);
+                        this._downloadJSONLicenseFile(encryptedData, companyName, this._initialIssuedDate);
+                        form.reset();
+
+                        // this._hideDownloadSecretKeyModal();
+                        if (isLicenseFileUpdated) {
+                            this._showToastMessage("Your license file has been updated.", "info");
+                        } else {
+                            this._showToastMessage(null, "info");
+                        }
+                        document.getElementById("fileDownloadText").textContent = "Generate & Download License File";
+                        data = this._initialIssuedDate = companyName = null;
+                        isLicenseFileUpdated = true;
+                    }).catch((error) => {
+                        this._showToastMessage("Unable to encrypt your file", "error");
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error saving license file:", error);
+                });
+
         })
 
         // const secretkeyForm = document.getElementById("secretkeyForm");
@@ -126,8 +143,9 @@ const LicenseGenerator = {
                         // this._hideUploadSecretKeyModal();
                         this._showToastMessage(null, "success");
 
+                        const generateLicenseForm = document.getElementById("generateLicenseForm");
                         for (const [key, value] of Object.entries(decryptedData)) {
-                            const input = document.querySelector(`input[name="${key}"]`);
+                            const input = generateLicenseForm.querySelector(`input[name="${key}"]`);
                             if (input) {
                                 input.value = value;
                             }
@@ -264,7 +282,7 @@ const LicenseGenerator = {
             toastMessage.classList.add("text-bg-danger");
 
         }
-        const toastBootstrap = bootstrap.Toast.getOrCreateInstance(document.getElementById("liveToast"))
+        const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastMessage);
         toastBootstrap.show();
     },
 

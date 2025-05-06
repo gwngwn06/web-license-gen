@@ -1,3 +1,10 @@
+<?php
+session_start();
+if (isset($_SESSION['current_user'])) {
+    header('Location: ./index.php');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -33,16 +40,17 @@
     </header>
 
     <main class="mx-auto my-5 bg-white border rounded-4 p-4 col-md-8 col-lg-5 col-sm-11 shadow-sm">
-        <div class="ms-4 fw-medium fs-2 mb-3 text-center" style="color: #0071BC">Login Account</div>
-        <form class="mx-3">
+        <div class="fw-medium fs-2 text-center" style="color: #0071BC">Login</div>
+        <div class="text-center mb-3">Don't have an account? <a class="fw-bold" href="./register.php">Sign up</a> for an account now.</div>
+        <form class="mx-3" method="post" action="">
             <div class="mb-2">
-                <input type="email" class="form-control  rounded-3 border-2" id="email" placeholder="Email" required>
+                <input name="email" type="email" class="form-control  rounded-3 border-2" id="email" placeholder="Email" required>
             </div>
             <div class="mb-1">
-                <input type="password" class="form-control rounded-3 border-2" id="password" placeholder="Password" required>
+                <input name="password" type="password" class="form-control rounded-3 border-2" id="password" placeholder="Password" required>
             </div>
             <div class="mb-2 form-check">
-                <input type="checkbox" class="form-check-input" id="rememberMe">
+                <input name="rememberMe" type="checkbox" class="form-check-input" id="rememberMe">
                 <label class="form-check-label" for="rememberMe">Remember me</label>
             </div>
             <div class="text-end">
@@ -52,8 +60,82 @@
 
     </main>
 
+    <div class="toast-container  position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast" class="toast text-bg-primary" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <img src="./assets/icons/nexas-america.png" width="50" height="25" class="rounded me-2" alt="...">
+                <strong class="me-auto toast-header-text"></strong>
+                <!-- <small>11 mins ago</small> -->
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+
+            </div>
+        </div>
+    </div>
 </body>
 
 <script src="./assets/vendor/bootstrap-5.3.5-dist/js/bootstrap.bundle.min.js"></script>
+<?php
+$toast = null;
+if (isset($_SESSION['toast'])) {
+    $toast = $_SESSION['toast'];
+    unset($_SESSION['toast']);
+    echo "<script>
+        const toastMessage = document.getElementById('liveToast');
+        const toastBody = toastMessage.querySelector('.toast-body');
+        const toastHeader = toastMessage.querySelector('.toast-header-text');
+        if ('$toast[status]' === 'success') {
+            toastHeader.innerHTML = '$toast[header]';
+            toastBody.innerHTML = '$toast[message]';
+            toastMessage.classList.remove('text-bg-success');
+            toastMessage.classList.remove('text-bg-danger');
+            toastMessage.classList.add('text-bg-primary');
+        } else {
+            toastHeader.innerHTML = '$toast[header]';
+            toastBody.innerHTML = '$toast[message]';
+            toastMessage.classList.remove('text-bg-primary');
+            toastMessage.classList.remove('text-bg-success');
+            toastMessage.classList.add('text-bg-danger');
+         }
+        const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastMessage);
+        toastBootstrap.show();
+    </script>";
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_once './accounts/account.php';
+    $account = new Account();
+    $account->initLoginFields();
+    $result = $account->loginUser();
+    // echo "<script>console.log('Login result: " . json_encode($result) . "');</script>";
+    if ($result['status'] === 'success') {
+        $user = $result['user'];
+        $_SESSION['toast'] = [
+            'status' => 'success',
+            'header' => 'Login successful',
+            'message' => 'Welcome back, ' . strtoupper($user['username']) . '!'
+        ];
+
+        $_SESSION['current_user'] = [
+            'id' => $user['id'],
+            'username' => $user['username'],
+            'email' => $user['email'],
+            'account_type' => $user['account_type']
+        ];
+
+        header('Location: ./index.php');
+        exit;
+    } else {
+        $_SESSION['toast'] = [
+            'status' => 'error',
+            'header' => 'Login failed',
+            'message' => $result['message']
+        ];
+        header('Location: ./login.php');
+        exit;
+    }
+}
+?>
 
 </html>

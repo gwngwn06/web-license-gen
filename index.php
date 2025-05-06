@@ -1,3 +1,11 @@
+<?php
+session_start();
+
+if (!isset($_SESSION['current_user'])) {
+    header('Location: ./login.php');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -12,29 +20,41 @@
     <header>
         <nav class="navbar navbar-expand-sm border-bottom border-secondary bg-white">
             <div class="container-fluid ">
-                <img id="backToHomePage" src="./assets/icons/nexas-america.png" width="110" height="55" />
-                <div class="navbar-brand d-flex flex-column">
-                    <div class="text-secondary text-end fw-medium ms-3">
-                        Web License Generator
-                        <!-- <sup style="font-size: 9px; vertical-align: super">2025</sup> -->
+                <div class="d-flex align-items-center">
+                    <img id="backToHomePage" src="./assets/icons/nexas-america.png" width="110" height="55" />
+                    <div class="navbar-brand d-flex flex-column">
+                        <div class="text-secondary text-end fw-medium ms-3">
+                            Web License Generator
+                            <!-- <sup style="font-size: 9px; vertical-align: super">2025</sup> -->
+                        </div>
                     </div>
+
                 </div>
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                <div class="d-flex flex-row-reverse align-items-center">
+                    <a href="./accounts/logout.php" class="btn btn-outline-danger rounded-3 me-2">Logout</a>
+                    <?php
+                    $user = $_SESSION['current_user'];
+                    $username = strtoupper($user['username']);
+                    echo "<div class='text-secondary me-3 text-center fw-medium'>Welcome back, $username</div>";
+                    ?>
+                    <!-- <a href="./account/account.php" class="btn btn-outline-dark rounded-3 me-2">Account</a> -->
+                </div>
+                <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                     data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false"
                     aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNavDropdown">
                     <ul class="navbar-nav"></ul>
-                </div>
+                </div> -->
             </div>
         </nav>
     </header>
 
     <main class="mx-auto my-5 bg-white border rounded-4 p-4 col-md-8 col-lg-7 col-sm-11 shadow-sm">
         <div class="d-flex justify-content-between align-items-center">
-            <div></div>
+            <div class="me-4"></div>
             <div class="ms-4 fw-medium fs-2 mb-3" style="color: #0071BC">License Generator</div>
             <div>
                 <input type="file" accept=".json" id="licenseUpload" class="d-none">
@@ -44,6 +64,11 @@
             </div>
         </div>
         <form id="generateLicenseForm">
+            <?php
+            $userId = $_SESSION['current_user']['id'];
+            echo "<input type='hidden' name='userId' value='$userId'>
+                  <input id='licenseId' type='hidden' name='licenseId' value=''>";
+            ?>
             <div class="">
                 <label for="codeVerifier" class="form-label text-secondary fw-medium"><span class="text-danger">*</span>
                     Verifier Code
@@ -80,15 +105,14 @@
                         <input name="technician" type="text" class="form-control rounded-3 border-2" id="technician">
                     </div>
                 </div>
-                <div class="col mb-2">
+                <!-- <div class="col mb-2">
                     <label for="machineInformation" class="form-label text-secondary fw-medium">Machine
                         Information</label>
                     <div class="">
                         <input name="machineInformation" type="text" class="form-control rounded-3 border-2"
                             id="machineInformation">
                     </div>
-                </div>
-
+                </div> -->
             </div>
             <div class="mt-3 mb-3"
                 style="border-bottom: 1px dashed var(--bs-secondary); border-width: 3px;  opacity: 0.1;">
@@ -142,7 +166,7 @@
                     <div class="col-2">
                         Type
                     </div>
-                    <div class="col">
+                    <div class="col permanent-license">
                         No. Permanent License
                     </div>
                     <div class="col">
@@ -157,7 +181,7 @@
                     <div class="col-2">
                         <span class="text-danger">*</span>MDC
                     </div>
-                    <div class="col">
+                    <div class="col permanent-license">
                         <input name="MDCPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
                             id="MDCPermanentCount">
                     </div>
@@ -174,7 +198,7 @@
                     <div class="col-2">
                         <span class="text-danger">*</span>DNC
                     </div>
-                    <div class="col">
+                    <div class="col permanent-license">
                         <input name="DNCPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
                             id="DNCPermanentCount" required>
                     </div>
@@ -191,7 +215,7 @@
                     <div class="col-2">
                         <span class="text-danger">*</span>HMI
                     </div>
-                    <div class="col">
+                    <div class="col permanent-license">
                         <input name="HMIPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
                             id="HMIPermanentCount">
                     </div>
@@ -289,5 +313,52 @@
 
 <script src="./assets/vendor/bootstrap-5.3.5-dist/js/bootstrap.bundle.min.js"></script>
 <script src="./assets/js/index.js"></script>
+
+<?php
+$toast = null;
+if (isset($_SESSION['toast'])) {
+    $toast = $_SESSION['toast'];
+    unset($_SESSION['toast']);
+    echo "<script>
+        const toastMessage = document.getElementById('liveToast');
+        const toastBody = toastMessage.querySelector('.toast-body');
+        const toastHeader = toastMessage.querySelector('.toast-header-text');
+        if ('$toast[status]' === 'success') {
+            toastHeader.innerHTML = '$toast[header]';
+            toastBody.innerHTML = '$toast[message]';
+            toastMessage.classList.remove('text-bg-success');
+            toastMessage.classList.remove('text-bg-danger');
+            toastMessage.classList.add('text-bg-primary');
+        } else {
+            toastHeader.innerHTML = '$toast[header]';
+            toastBody.innerHTML = '$toast[message]';
+            toastMessage.classList.remove('text-bg-primary');
+            toastMessage.classList.remove('text-bg-success');
+            toastMessage.classList.add('text-bg-danger');
+         }
+        const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastMessage);
+        toastBootstrap.show();
+    </script>";
+}
+
+$user = $_SESSION['current_user'];
+$accountType = $user['account_type'];
+
+if ($accountType == 0) {
+    echo "<script>
+    console.log('Permanent license field hidden');
+    document.querySelectorAll('.permanent-license').forEach(function (element) {
+        element.classList.add('d-none');
+    });
+    </script>";
+} else {
+    echo "<script>
+    document.querySelectorAll('.permanent-license').forEach(function (element) {
+        element.classList.remove('d-none');
+    });
+    </script>";
+}
+?>
+
 
 </html>

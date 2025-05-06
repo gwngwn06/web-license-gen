@@ -9,11 +9,51 @@ class Account
     public $accountType;
     public $resellerName;
     public $mobileNumber;
-    public $companyInformation;
+    public $companyName;
     public $resellerCode;
 
+    public function initLoginFields()
+    {
+        $this->email = $_POST['email'] ?? null;
+        $this->password = $_POST['password'] ?? null;
+    }
 
-    public function __construct()
+    public function loginUser()
+    {
+        if (empty($this->email) || empty($this->password)) {
+            return ["status" => "error", "message" => "Email and password are required"];
+        }
+
+        $conn = new mysqli("localhost", "root", "", "testdb");
+        if ($conn->connect_error) {
+            return ["status" => "error", "message" => "Something went wrong. Please try again later."];
+        }
+
+        $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
+        if (!$stmt) {
+            return ["status" => "error", "message" => "Something went wrong. Please try again later."];
+        }
+        $stmt->bind_param("s", $this->email);
+        try {
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result->num_rows > 0) {
+                $user = $result->fetch_assoc();
+                if (password_verify($this->password, $user['hashed_password'])) {
+                    return ["status" => "success", "message" => "Login successful", "user" => $user];
+                } else {
+                    return ["status" => "error", "message" => "Invalid password"];
+                }
+            } else {
+                return ["status" => "error", "message" => "Email not found"];
+            }
+        } finally {
+            $stmt->close();
+            $conn->close();
+        }
+    }
+
+    public function initRegistrationFields()
     {
         $this->username = $_POST['username'] ?? null;
         $this->email = $_POST['email'] ?? null;
@@ -22,9 +62,10 @@ class Account
         $this->accountType = $_POST['accountType'] ?? null;
         $this->resellerName = $_POST['resellerName'] ?? null;
         $this->mobileNumber = $_POST['mobileNumber'] ?? null;
-        $this->companyInformation = $_POST['companyInformation'] ?? null;
+        $this->companyName = $_POST['companyName'] ?? null;
         $this->resellerCode = $_POST['resellerCode'] ?? null;
     }
+
 
     public function isValidRegistration()
     {
@@ -34,8 +75,14 @@ class Account
         if ($this->password !== $this->confirmPassword) {
             return ["status" => "error", "message" => "Passwords do not match"];
         }
-        if ($this->accountType == 0 && (empty($this->resellerName) || empty($this->mobileNumber) || empty($this->companyInformation) || empty($this->resellerCode))) {
-            return ["status" => "error", "message" => "All reseller fields are required"];
+        if ($this->accountType == 0 && (empty($this->resellerName) || empty($this->mobileNumber) || empty($this->companyName) || empty($this->resellerCode))) {
+            return ["status" => "error", "message" => "Reseller fields are required"];
+        }
+        if ($this->accountType == 1) {
+            $this->resellerName = null;
+            $this->mobileNumber = null;
+            $this->companyName = null;
+            $this->resellerCode = null;
         }
         if (!filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
             return ["status" => "error", "message" => "Invalid email format"];
@@ -43,14 +90,14 @@ class Account
         if (strlen($this->password) <= 5) {
             return ["status" => "error", "message" => "Password must be at least 6 characters long"];
         }
-        if ($this->emailAlreadyExists()) {
+        if ($this->isEmailAlreadyExists()) {
             return ["status" => "error", "message" => "Email already exists"];
         }
 
         return ["status" => "success", "message" => "Registration is valid"];
     }
 
-    private function emailAlreadyExists()
+    private function isEmailAlreadyExists()
     {
         $conn = new mysqli("localhost", "root", "", "testdb");
         if ($conn->connect_error) {
@@ -85,13 +132,13 @@ class Account
 
         $hashedPassword = password_hash($this->password, PASSWORD_BCRYPT);
 
-        $stmt = $conn->prepare("INSERT INTO users (username, email, hashed_password, account_type, reseller_name, mobile_number, company_information, reseller_code) VALUES (?, ?, ?, ?, ?, ?, ? ,?)");
+        $stmt = $conn->prepare("INSERT INTO users (username, email, hashed_password, account_type, reseller_name, mobile_number, company_name, reseller_code) VALUES (?, ?, ?, ?, ?, ?, ? ,?)");
 
         if (!$stmt) {
             return ["status" => "error", "message" => "Failed to prepare statement."];
         }
 
-        $stmt->bind_param("ssssssss", $this->username, $this->email, $hashedPassword, $this->accountType, $this->resellerName, $this->mobileNumber, $this->companyInformation, $this->resellerCode);
+        $stmt->bind_param("ssssssss", $this->username, $this->email, $hashedPassword, $this->accountType, $this->resellerName, $this->mobileNumber, $this->companyName, $this->resellerCode);
         try {
             if ($stmt->execute()) {
                 return ["status" => "success", "message" => "Registration successful"];

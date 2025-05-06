@@ -1,3 +1,11 @@
+<?php
+ob_start();
+session_start();
+if (isset($_SESSION['current_user'])) {
+    header('Location: ./index.php');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -33,7 +41,8 @@
     </header>
 
     <main class="mx-auto my-5 bg-white border rounded-4 p-4 col-md-8 col-lg-5 col-sm-11 shadow-sm">
-        <div class="ms-4 fw-medium fs-2 mb-3 text-center" style="color: #0071BC">Register Account</div>
+        <div class="fw-medium fs-2 text-center" style="color: #0071BC">Register for an account</div>
+        <div class="text-center mb-3">Already registered? <a class="fw-bold" href="./login.php">Login</a> to your account now.</div>
 
         <form class="mx-3" method="post" action="">
             <div class="fw-medium mb-1">User Info</div>
@@ -52,7 +61,7 @@
             </div>
 
             <div class="fw-medium mb-1">Account Type</div>
-            <select class="form-select mb-3" aria-label="Select Account Type" id="accountType" name="accountType" required>
+            <select class="form-select mb-3 rounded-3 border-2" aria-label="Select Account Type" id="accountType" name="accountType" required>
                 <option value="0" selected>Reseller Account</option>
                 <option value="1">Nexas Account</option>
             </select>
@@ -69,7 +78,7 @@
                 </div>
                 <div class="row">
                     <div class="mb-2 col">
-                        <input name="companyInformation" type="text" class="form-control rounded-3 border-2" placeholder="Company Information" required>
+                        <input name="companyName" type="text" class="form-control rounded-3 border-2" placeholder="Company Name" required>
                     </div>
                     <div class="mb-2 col">
                         <input name="resellerCode" type="text" class="form-control rounded-3 border-2" placeholder="Reseller Code" required>
@@ -86,11 +95,13 @@
 </body>
 
 <?php
-require "./account/account.php";
+require "./accounts/account.php";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $account = new Account();
+    $account->initRegistrationFields();
     $response = $account->isValidRegistration();
+
 
     if ($response['status'] === 'error') {
         echo "<script>
@@ -102,18 +113,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </script>";
         // exit;
     } else {
-        echo "<script>
-        const formError = document.getElementById('formError');
-        if (formError) {
-            formError.textContent = '';
-        }
-        </script>";
-
         $user = $account->registerNewUser();
         if ($user['status'] === "success") {
-            echo "<script>
-            window.location.href = './login.php';
-            </script>";
+
+            $_SESSION['toast'] = [
+                'status' => 'success',
+                'header' => 'Registration Successful',
+                'message' => 'Account created successfully! Please log in.'
+            ];
+            header("Location: ./login.php");
+            exit;
         } else {
             echo "<script>
             const formError = document.getElementById('formError');
@@ -133,7 +142,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     const resellerInfoDiv = document.getElementById('resellerInfo');
 
     accountTypeSelect.addEventListener('change', (e) => {
-        console.log(e.target.value === '1');
         if (e.target.value === "1") {
             resellerInfoDiv.style.display = "none";
             resellerInfoDiv.querySelectorAll('input').forEach(input => {
