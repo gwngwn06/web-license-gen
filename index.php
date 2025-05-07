@@ -13,6 +13,7 @@ if (!isset($_SESSION['current_user'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Licence Generator - Nexas America</title>
+    <link rel="stylesheet" href="./assets/css/global.css">
     <link rel="stylesheet" href="./assets/vendor/bootstrap-5.3.5-dist/css/bootstrap.min.css">
 </head>
 
@@ -52,7 +53,10 @@ if (!isset($_SESSION['current_user'])) {
         </nav>
     </header>
 
-    <main class="mx-auto my-5 bg-white border rounded-4 p-4 col-md-8 col-lg-7 col-sm-11 shadow-sm">
+    <div class="mx-auto text-center col-11 col-md-7 col-sm-10" data-bs-toggle="modal" data-bs-target="#searchModal">
+        <input type="text" id="searchInput" class="form-control rounded-4 shadow-sm border-2 my-3" placeholder="Search for a license...">
+    </div>
+    <main class="mx-auto mb-5 bg-white border rounded-4 p-4 col-md-8 col-lg-7 col-sm-11 shadow-sm">
         <div class="d-flex justify-content-between align-items-center">
             <div class="me-4"></div>
             <div class="ms-4 fw-medium fs-2 mb-3" style="color: #0071BC">License Generator</div>
@@ -134,10 +138,10 @@ if (!isset($_SESSION['current_user'])) {
                     <input name="customerName" type="text" class="form-control rounded-3 border-2" required>
                 </div>
                 <div class="col">
-                    <label for="customerEmailAddress" class="form-label text-secondary fw-medium">
+                    <label for="customerEmail" class="form-label text-secondary fw-medium">
                         <span class="text-danger">*</span>
                         Email Address</label>
-                    <input name="customerEmailAddress" type="text" class="form-control rounded-3 border-2" required>
+                    <input name="customerEmail" type="email" class="form-control rounded-3 border-2" required>
                 </div>
             </div>
             <div class="row">
@@ -182,16 +186,16 @@ if (!isset($_SESSION['current_user'])) {
                         <span class="text-danger">*</span>MDC
                     </div>
                     <div class="col permanent-license">
-                        <input name="MDCPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
-                            id="MDCPermanentCount">
+                        <input name="mdcPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
+                            id="mdcPermanentCount">
                     </div>
                     <div class="col">
-                        <input name="MDCTrialCount" value="0" type="number" class="form-control rounded-3 border-2"
-                            id="MDCTrialCount">
+                        <input name="mdcTrialCount" value="0" type="number" class="form-control rounded-3 border-2"
+                            id="mdcTrialCount">
                     </div>
                     <div class="col">
-                        <input name="MDCTrialDays" value="40" type="number" class="form-control rounded-3 border-2"
-                            id="MDCTrialDays">
+                        <input name="mdcTrialDays" value="40" type="number" class="form-control rounded-3 border-2"
+                            id="mdcTrialDays">
                     </div>
                 </div>
                 <div class="row mb-2 align-items-center">
@@ -199,16 +203,16 @@ if (!isset($_SESSION['current_user'])) {
                         <span class="text-danger">*</span>DNC
                     </div>
                     <div class="col permanent-license">
-                        <input name="DNCPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
-                            id="DNCPermanentCount" required>
+                        <input name="dncPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
+                            id="dncPermanentCount" required>
                     </div>
                     <div class="col">
-                        <input name="DNCTrialCount" value="0" type="number" class="form-control rounded-3 border-2"
-                            id="DNCTrialCount" required>
+                        <input name="dncTrialCount" value="0" type="number" class="form-control rounded-3 border-2"
+                            id="dncTrialCount" required>
                     </div>
                     <div class="col">
-                        <input name="DNCTrialDays" value="40" type="number" class="form-control rounded-3 border-2"
-                            id="DNCTrialDays" required>
+                        <input name="dncTrialDays" value="40" type="number" class="form-control rounded-3 border-2"
+                            id="dncTrialDays" required>
                     </div>
                 </div>
                 <div class="row mb-2 align-items-center">
@@ -216,16 +220,16 @@ if (!isset($_SESSION['current_user'])) {
                         <span class="text-danger">*</span>HMI
                     </div>
                     <div class="col permanent-license">
-                        <input name="HMIPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
-                            id="HMIPermanentCount">
+                        <input name="hmiPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
+                            id="hmiPermanentCount">
                     </div>
                     <div class="col">
-                        <input name="HMITrialCount" value="0" type="number" class="form-control rounded-3 border-2"
-                            id="HMITrialCount">
+                        <input name="hmiTrialCount" value="0" type="number" class="form-control rounded-3 border-2"
+                            id="hmiTrialCount">
                     </div>
                     <div class="col">
-                        <input name="HMITrialDays" value="40" type="number" class="form-control rounded-3 border-2"
-                            id="HMITrialDays">
+                        <input name="hmiTrialDays" value="40" type="number" class="form-control rounded-3 border-2"
+                            id="hmiTrialDays">
                     </div>
                 </div>
             </div>
@@ -309,6 +313,71 @@ if (!isset($_SESSION['current_user'])) {
             </div>
         </div>
     </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModal" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+            <div class="modal-content" style="height: 80vh; overflow-y: auto;">
+                <!-- <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div> -->
+                <div class="modal-body">
+                    <input type=" text" id="searchLicenseInput" class="form-control rounded-4 border-2 my-1" placeholder="Search for a license...">
+                    <div class="d-flex justify-content-end gap-2 mt-3 mb-2">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle rounded-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Sort by
+                            </button>
+                            <ul class="dropdown-menu p-2">
+                                <li>
+                                    <div>Date</div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="radioDefault" id="radioDefault1">
+                                        <label class="form-check-label" for="radioDefault1">
+                                            Ascending
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="radioDefault" id="radioDefault2" checked>
+                                        <label class="form-check-label" for="radioDefault2">
+                                            Descending
+                                        </label>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class=" dropdown">
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle rounded-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Filter
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#">Date range</a></li>
+                                <li><a class="dropdown-item" href="#">Permanent License</a></li>
+                                <li><a class="dropdown-item" href="#">Trial License</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <table id="licenseTable" class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">Reseller Name</th>
+                                <th scope="col">Company name</th>
+                                <th scope="col">Date created</th>
+                                <th scope="col">Date updated</th>
+                                <th scope="col">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="searchResultsTableBody">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 <script src="./assets/vendor/bootstrap-5.3.5-dist/js/bootstrap.bundle.min.js"></script>
@@ -346,7 +415,7 @@ $accountType = $user['account_type'];
 
 if ($accountType == 0) {
     echo "<script>
-    console.log('Permanent license field hidden');
+    // console.log('Permanent license field hidden');
     document.querySelectorAll('.permanent-license').forEach(function (element) {
         element.classList.add('d-none');
     });

@@ -1,58 +1,51 @@
 const LicenseGenerator = {
     _enc: new TextEncoder(),
     _secretkey: "mySecretKey",
-    _initialIssuedDate: null,
     _annualMaintenanceExpDate: null,
 
     init() {
         this.onSubmitFormEvent();
-        this.licenseUploadEvent();
+        this.onLicenseUploadEvent();
         this.numberValidationEvent();
     },
 
     onSubmitFormEvent() {
         let data = null;
         let companyName = null;
-        let isLicenseFileUpdated = true;
         const form = document.getElementById("generateLicenseForm")
 
         form.addEventListener("submit", (e) => {
+
             if (!form.checkValidity()) return;
             e.preventDefault();
 
             const formData = new FormData(e.target);
             companyName = formData.get("companyName");
-            if (this._initialIssuedDate === null || this._initialIssuedDate === "") {
-                isLicenseFileUpdated = false;
-                this._initialIssuedDate = Date.now();
-            }
-            // formData.append("lastLicenseUpdateDate", Date.now());
-            // formData.append("licenseInitialIssuedDate", this._initialIssuedDate);
-            formData.append("annualMaintenanceExpDate", this._annualMaintenanceExpDate);
+            // formData.append("annualMaintenanceExpDate", this._annualMaintenanceExpDate);
 
             data = Object.fromEntries(formData.entries());
-            // this._showDownloadSecretKeyModal();
-            const unencryptedData = {
-                data,
-                iv: null,
-                salt: null,
-                "kdf": {
-                    "name": "PBKDF2",
-                    "iterations": 100000,
-                    "hash": "SHA-256",
-                    "keyLength": 256
-                }
-            }
+
 
             fetch("./licenses/license.php", {
                 method: "POST",
                 body: formData,
             })
-                .then((response) => response.json())
+                .then((response) => {
+                    if (!response.ok) {
+                        // This block runs for 4xx or 5xx responses
+                        return response.json().then(err => {
+                            throw new Error(err.error || 'Unknown error');
+                        });
+                    }
+                    return response.json();
+                })
                 .then((result) => {
                     console.log("License file saved successfully:", result);
-                    this._initialIssuedDate = result.created_at;
                     data["licenseId"] = result.id;
+                    data["licenseCreatedAt"] = result.createdAt;
+                    data['licenseUpdatedAt'] = result.updatedAt;
+                    delete data["userId"];
+
                     this._encrypt(JSON.stringify(data), this._secretkey).then(({ savedCiphertext, iv, salt }) => {
                         const encryptedData = {
                             data: btoa(String.fromCharCode(...savedCiphertext)),
@@ -65,27 +58,38 @@ const LicenseGenerator = {
                                 "keyLength": 256
                             }
                         };
+                        const unencryptedData = {
+                            data,
+                            iv: null,
+                            salt: null,
+                            "kdf": {
+                                "name": "PBKDF2",
+                                "iterations": 100000,
+                                "hash": "SHA-256",
+                                "keyLength": 256
+                            }
+                        }
                         console.log("download unencryptedData: ", unencryptedData);
                         console.log("download encryptedData:", encryptedData);
-                        this._downloadJSONLicenseFile(unencryptedData, "UNENCRYPTED_" + companyName, this._initialIssuedDate);
-                        this._downloadJSONLicenseFile(encryptedData, companyName, this._initialIssuedDate);
+                        this._downloadJSONLicenseFile(unencryptedData, "UNENCRYPTED_" + companyName, result.createdAt);
+                        this._downloadJSONLicenseFile(encryptedData, companyName, result.createdAt);
                         form.reset();
 
-                        // this._hideDownloadSecretKeyModal();
-                        if (isLicenseFileUpdated) {
+                        if (result.isUpdated) {
                             this._showToastMessage("Your license file has been updated.", "info");
                         } else {
-                            this._showToastMessage(null, "info");
+                            this._showToastMessage("Your license has been generated.", "info");
                         }
+
                         document.getElementById("fileDownloadText").textContent = "Generate & Download License File";
-                        data = this._initialIssuedDate = companyName = null;
-                        isLicenseFileUpdated = true;
+                        data = companyName = null;
                     }).catch((error) => {
                         this._showToastMessage("Unable to encrypt your file", "error");
                     });
                 })
                 .catch((error) => {
                     console.error("Error saving license file:", error);
+                    this._showToastMessage("Error saving license file", "error");
                 });
 
         })
@@ -120,7 +124,7 @@ const LicenseGenerator = {
         // });
     },
 
-    licenseUploadEvent() {
+    onLicenseUploadEvent() {
         let encrypted = null;
         const licenseUpload = document.getElementById("licenseUpload");
 
@@ -136,11 +140,8 @@ const LicenseGenerator = {
             reader.onload = (event) => {
                 encrypted = JSON.parse(event.target.result);
                 if (encrypted.data && encrypted.iv && encrypted.salt) {
-                    // this._showUploadSecretKeyModal();
                     this._decrypt(encrypted.data, encrypted.iv, encrypted.salt, this._secretkey).then((decryptedData) => {
                         console.log("decryptedData: ", decryptedData);
-                        this._initialIssuedDate = decryptedData.licenseInitialIssuedDate;
-                        // this._hideUploadSecretKeyModal();
                         this._showToastMessage(null, "success");
 
                         const generateLicenseForm = document.getElementById("generateLicenseForm");
@@ -148,12 +149,12 @@ const LicenseGenerator = {
                             const input = generateLicenseForm.querySelector(`input[name="${key}"]`);
                             if (input) {
                                 input.value = value;
+                                input.disabled = false;
                             }
                         }
 
                         document.getElementById("fileDownloadText").textContent = "Update License File";
                     }).catch((error) => {
-                        // this._hideUploadSecretKeyModal();
                         console.log(error);
                         this._showToastMessage(null, "error");
                     }).finally(() => {
@@ -161,21 +162,12 @@ const LicenseGenerator = {
                         // secretKeyInput.value = null;
                     });
                 } else {
-                    // console.error("Invalid license file format.");
                     this._showToastMessage("Invalid license file format.", "error");
                     return;
                 }
             };
             reader.readAsText(file);
         });
-
-        // const uploadSecretkeyForm = document.getElementById("uploadSecretKeyForm");
-        // uploadSecretkeyForm.addEventListener("submit", (e) => {
-        //     e.preventDefault();
-        //     const secretKeyInput = document.getElementById("uploadSecretKeyInput");
-        //     const secretKey = secretKeyInput.value;
-        //     if (!secretKey) return;
-        // });
 
     },
 
@@ -238,25 +230,6 @@ const LicenseGenerator = {
         URL.revokeObjectURL(url);
     },
 
-    // _showDownloadSecretKeyModal() {
-    //     const secretkeyModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('secretkeyModal'));
-    //     secretkeyModal.show();
-    // },
-
-    // _hideDownloadSecretKeyModal() {
-    //     const secretkeyModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('secretkeyModal'));
-    //     secretkeyModal.hide();
-    // },
-
-    // _showUploadSecretKeyModal() {
-    //     const uploadSecretKeyModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('uploadSecretKeyModal'));
-    //     uploadSecretKeyModal.show();
-    // },
-
-    // _hideUploadSecretKeyModal() {
-    //     const uploadSecretKeyModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('uploadSecretKeyModal'));
-    //     uploadSecretKeyModal.hide();
-    // },
 
     _showToastMessage(message, type) {
         const toastMessage = document.getElementById("liveToast");
@@ -299,4 +272,97 @@ const LicenseGenerator = {
 
 }
 
+
+const SearchLicense = {
+    init() {
+        this.onSearchLicenseEvent();
+    },
+
+    onSearchLicenseEvent() {
+        const searchInput = document.getElementById("searchLicenseInput");
+
+        function snakeToCamel(str) {
+            return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        }
+
+        const searchData = (event) => {
+            const value = event.target.value;
+            console.log("Searching...", value);
+            fetch(`./licenses/license.php?search=${encodeURIComponent(value)}`)
+            .then(res => res.json())
+            .then(data => {
+                console.log("Search results:", data);
+                const tableBody = document.getElementById("searchResultsTableBody");
+
+                tableBody.innerHTML = "";
+                if (data.result.length === 0) {
+                    return;
+                }
+
+                data.result.forEach(item => {
+                    const row = document.createElement("tr");
+                    const viewButtontd = document.createElement("td");
+                    const viewButton = document.createElement("button");
+                    const generateLicenseForm = document.getElementById("generateLicenseForm");
+                    const currentUserId = generateLicenseForm.querySelector('input[name="userId"]').value;
+
+                    viewButton.classList.add("btn", "btn-outline-primary", "rounded-3", "py-1", "px-3");
+                    viewButton.setAttribute("data-bs-dismiss", "modal");
+                    viewButton.innerText = "View";
+                    viewButtontd.appendChild(viewButton);
+                    row.innerHTML = `
+                        <td class="${currentUserId == item['user_id']? 'fw-medium': ''}">${item['reseller_name']}</td>
+                        <td>${item['company_name']}</td>
+                        <td>${item['license_created_at']}</td>
+                        <td>${item['license_updated_at']}</td>
+                        `;
+                    row.appendChild(viewButtontd);
+
+                    viewButton.addEventListener("click", () => {
+                        // console.log("View button clicked for:", JSON.stringify(item));
+
+                        for (const [key, value] of Object.entries(item)) {
+                            // console.log("key: ", snakeToCamel(key), "value: ", value);
+                            let camelCaseKey = snakeToCamel(key);
+                            if (camelCaseKey == "userId") continue;
+                            if (camelCaseKey == "id") camelCaseKey = "licenseId";
+
+                            const input = generateLicenseForm.querySelector(`input[name="${camelCaseKey}"]`);
+                            if (input) {
+                                input.value = value;
+
+                                if (item["user_id"] != currentUserId)  {
+                                    input.disabled = true;
+                                    document.getElementById("fileDownloadText").textContent = "Generate & Download License File";
+                                } else {
+                                    input.disabled = false;
+                                    document.getElementById("fileDownloadText").textContent = "Update License File";
+                                }
+                            }
+                        }
+                    });
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(err => {
+                console.error("Error fetching search results:", err);
+            });
+        }
+
+        const debounce = (callback, waitTime) => {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    callback(...args);
+                }, waitTime);
+            };
+        }
+
+        const debounceHandler = debounce(searchData, 800);
+        searchInput.addEventListener("input", debounceHandler);
+    }
+}
+
+SearchLicense.init();
 LicenseGenerator.init();

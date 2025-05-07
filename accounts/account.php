@@ -1,5 +1,4 @@
 <?php
-
 class Account
 {
     public $username;
@@ -23,6 +22,9 @@ class Account
         if (empty($this->email) || empty($this->password)) {
             return ["status" => "error", "message" => "Email and password are required"];
         }
+        if (!filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
+            return ["status" => "error", "message" => "Invalid email format"];
+        }
 
         $conn = new mysqli("localhost", "root", "", "testdb");
         if ($conn->connect_error) {
@@ -42,7 +44,7 @@ class Account
                 if (password_verify($this->password, $user['hashed_password'])) {
                     return ["status" => "success", "message" => "Login successful", "user" => $user];
                 } else {
-                    return ["status" => "error", "message" => "Invalid password"];
+                    return ["status" => "error", "message" => "Incorrect password"];
                 }
             } else {
                 return ["status" => "error", "message" => "Email not found"];
@@ -75,6 +77,18 @@ class Account
         if ($this->password !== $this->confirmPassword) {
             return ["status" => "error", "message" => "Passwords do not match"];
         }
+        if (!preg_match("/^[a-zA-Z0-9_]+$/", $this->username)) {
+            return ["status" => "error", "message" => "Username can only contain letters, numbers, and underscores"];
+        }
+        if (strlen($this->username) < 3 || strlen($this->username) > 20) {
+            return ["status" => "error", "message" => "Username must be between 3 and 20 characters long"];
+        }
+        if (!filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
+            return ["status" => "error", "message" => "Invalid email format"];
+        }
+        if (strlen($this->password) <= 5) {
+            return ["status" => "error", "message" => "Password must be at least 6 characters long"];
+        }
         if ($this->accountType == 0 && (empty($this->resellerName) || empty($this->mobileNumber) || empty($this->companyName) || empty($this->resellerCode))) {
             return ["status" => "error", "message" => "Reseller fields are required"];
         }
@@ -84,11 +98,8 @@ class Account
             $this->companyName = null;
             $this->resellerCode = null;
         }
-        if (!filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
-            return ["status" => "error", "message" => "Invalid email format"];
-        }
-        if (strlen($this->password) <= 5) {
-            return ["status" => "error", "message" => "Password must be at least 6 characters long"];
+        if (!preg_match("/^[0-9]{10}$/", $this->mobileNumber)) {
+            return ["status" => "error", "message" => "Mobile number must be 10 digits long"];
         }
         if ($this->isEmailAlreadyExists()) {
             return ["status" => "error", "message" => "Email already exists"];
