@@ -33,13 +33,12 @@ if (!isset($_SESSION['current_user'])) {
                 </div>
 
                 <div class="d-flex flex-row-reverse align-items-center">
-                    <a href="./accounts/logout.php" class="btn btn-outline-danger rounded-3 me-2">Logout</a>
+                    <a href="./accounts/logout.php" class="btn btn-outline-danger rounded-3 me-2 btn-sm">Logout</a>
                     <?php
                     $user = $_SESSION['current_user'];
                     $username = strtoupper($user['username']);
                     echo "<div class='text-secondary me-3 text-center fw-medium'>Welcome back, $username</div>";
                     ?>
-                    <!-- <a href="./account/account.php" class="btn btn-outline-dark rounded-3 me-2">Account</a> -->
                 </div>
                 <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                     data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false"
@@ -109,14 +108,6 @@ if (!isset($_SESSION['current_user'])) {
                         <input name="technician" type="text" class="form-control rounded-3 border-2" id="technician">
                     </div>
                 </div>
-                <!-- <div class="col mb-2">
-                    <label for="machineInformation" class="form-label text-secondary fw-medium">Machine
-                        Information</label>
-                    <div class="">
-                        <input name="machineInformation" type="text" class="form-control rounded-3 border-2"
-                            id="machineInformation">
-                    </div>
-                </div> -->
             </div>
             <div class="mt-3 mb-3"
                 style="border-bottom: 1px dashed var(--bs-secondary); border-width: 3px;  opacity: 0.1;">
@@ -234,7 +225,6 @@ if (!isset($_SESSION['current_user'])) {
                 </div>
             </div>
 
-
             <div class="text-end mt-4">
                 <div class="mt-3 mb-3"
                     style="border-bottom: 1px solid var(--bs-secondary); border-width: 1px;  opacity: 0.2;">
@@ -246,7 +236,6 @@ if (!isset($_SESSION['current_user'])) {
         </form>
 
     </main>
-
 
     <div class="modal fade" id="uploadSecretKeyModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
         aria-labelledby="uploadSecretKeyModal" aria-hidden="true">
@@ -315,47 +304,114 @@ if (!isset($_SESSION['current_user'])) {
     </div>
 
     <!-- Modal -->
-    <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModal" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+    <div class="modal" id="searchModal" tabindex="-1" aria-labelledby="searchModal" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-lg-down">
             <div class="modal-content" style="height: 80vh; overflow-y: auto;">
-                <!-- <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div> -->
+
                 <div class="modal-body">
                     <input type=" text" id="searchLicenseInput" class="form-control rounded-4 border-2 my-1" placeholder="Search for a license...">
                     <div class="d-flex justify-content-end gap-2 mt-3 mb-2">
                         <div class="dropdown">
-                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle rounded-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button id="sortByDropdown" class="btn btn-outline-secondary btn-sm dropdown-toggle rounded-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 Sort by
                             </button>
-                            <ul class="dropdown-menu p-2">
-                                <li>
-                                    <div>Date</div>
+                            <div class="dropdown-menu shadow p-2" style="width: 250px;">
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="text-secondary mb-1">Date</div>
+                                        <select id="sortByDateType" name="sortByDateType" class="form-select form-select-sm w-auto">
+                                            <option value="updatedAt" selected>Updated</option>
+                                            <option value="createdAt">Created</option>
+                                            <option value="none">None</option>
+                                        </select>
+                                    </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="radioDefault" id="radioDefault1">
-                                        <label class="form-check-label" for="radioDefault1">
+                                        <input class="form-check-input" type="radio" name="dateSort" id="dateAscending" value="asc">
+                                        <label class="form-check-label" for="dateAscending">
                                             Ascending
                                         </label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="radioDefault" id="radioDefault2" checked>
-                                        <label class="form-check-label" for="radioDefault2">
+                                        <input class="form-check-input" type="radio" name="dateSort" id="dateDescending" value="desc" checked>
+                                        <label class="form-check-label" for="dateDescending">
                                             Descending
                                         </label>
                                     </div>
-                                </li>
-                            </ul>
+                                </div>
+                                <hr class="dropdown-divider">
+                                </hr>
+                                <div class="mb-2">
+                                    <div class="text-secondary mb-1">Reseller</div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="resellerNameSort" id="resellerNameAscending" value="asc" checked>
+                                        <label class="form-check-label" for="resellerNameAscending">
+                                            A-Z
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="resellerNameSort" id="resellerNameDescending" value="desc">
+                                        <label class="form-check-label" for="resellerNameDescending">
+                                            Z-A
+                                        </label>
+                                    </div>
+                                </div>
+                                <hr class="dropdown-divider">
+                                </hr>
+                                <div class="mb-2">
+                                    <div class="text-secondary mb-1">Company</div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="companyNameSort" id="companyNameAscending" value="asc" checked>
+                                        <label class="form-check-label" for="companyNameAscending">
+                                            A-Z
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="companyNameSort" id="companyNameDescending" value="desc">
+                                        <label class="form-check-label" for="companyNameDescending">
+                                            Z-A
+                                        </label>
+                                    </div>
+                                </div>
+                                <hr class="dropdown-divider">
+                                </hr>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <button id="clearSortByBtn" class="btn btn-outline-secondary btn-sm rounded-3">Reset</button>
+                                    <button id="sortByBtn" class="btn btn-primary btn-sm rounded-3">Apply</button>
+                                </div>
+                            </div>
                         </div>
-                        <div class=" dropdown">
-                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle rounded-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+
+                        <div class="dropdown">
+                            <button id="filterByDropdown" class="btn btn-outline-secondary btn-sm dropdown-toggle rounded-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 Filter
                             </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#">Date range</a></li>
-                                <li><a class="dropdown-item" href="#">Permanent License</a></li>
-                                <li><a class="dropdown-item" href="#">Trial License</a></li>
-                            </ul>
+                            <div class="dropdown-menu shadow p-2">
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="mb-1 fw-medium">Date range</div>
+                                        <select id="filterByDateType" name="filterByDateType" class="form-select form-select-sm w-auto">
+                                            <option value="updatedAt" selected>Updated</option>
+                                            <option value="createdAt">Created</option>
+                                        </select>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <div>
+                                            <label class="text-secondary" for="filterStartDate"><small>From</small></label>
+                                            <input type="date" id="filterStartDate" class="form-control rounded-3 border-2">
+                                        </div>
+                                        <div>
+                                            <label class="text-secondary" for="filterEndDate"><small>To</small></label>
+                                            <input type="date" id="filterEndDate" class="form-control rounded-3 border-2">
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr class="dropdown-divider">
+                                </hr>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <button id="clearFilterBtn" class="btn btn-outline-secondary btn-sm rounded-3">Reset</button>
+                                    <button id="filterBtn" class="btn btn-primary btn-sm rounded-3">Apply</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -373,6 +429,11 @@ if (!isset($_SESSION['current_user'])) {
 
                         </tbody>
                     </table>
+                    <div id="paginationDiv" class="d-flex justify-content-center align-items-center gap-2">
+                        <button id="paginationPrevBtn" class="btn btn-outline-dark btn-sm rounded-3">Prev</button>
+                        <div id="paginationPageCount">1/2</div>
+                        <button id="paginationNextBtn" class="btn btn-outline-dark btn-sm rounded-3">Next</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -381,7 +442,7 @@ if (!isset($_SESSION['current_user'])) {
 </body>
 
 <script src="./assets/vendor/bootstrap-5.3.5-dist/js/bootstrap.bundle.min.js"></script>
-<script src="./assets/js/index.js"></script>
+<script type="module" src="./assets/js/index.js"></script>
 
 <?php
 $toast = null;
@@ -415,7 +476,6 @@ $accountType = $user['account_type'];
 
 if ($accountType == 0) {
     echo "<script>
-    // console.log('Permanent license field hidden');
     document.querySelectorAll('.permanent-license').forEach(function (element) {
         element.classList.add('d-none');
     });

@@ -94,34 +94,6 @@ const LicenseGenerator = {
 
         })
 
-        // const secretkeyForm = document.getElementById("secretkeyForm");
-        // secretkeyForm.addEventListener("submit", (e) => {
-        //     e.preventDefault();
-
-        //     const secretKey = document.getElementById("secretkeyInput").value;
-        //     if (!secretKey) return;
-
-        //     this._encrypt(JSON.stringify(data), secretKey).then(({ savedCiphertext, iv, salt }) => {
-        //         const dataToSave = {
-        //             data: btoa(String.fromCharCode(...savedCiphertext)),
-        //             iv: btoa(String.fromCharCode(...iv)),
-        //             salt: btoa(String.fromCharCode(...salt)),
-        //             "kdf": {
-        //                 "name": "PBKDF2",
-        //                 "iterations": 100000,
-        //                 "hash": "SHA-256",
-        //                 "keyLength": 256
-        //             }
-        //         };
-        //         this._downloadJSONLicenseFile(dataToSave, companyName, initialIssuedDate);
-        //         form.reset();
-        //         data = initialIssuedDate = companyName = null;
-
-        //         this._hideDownloadSecretKeyModal();
-        //         this._showToastMessage(null, "info");
-        //     });
-
-        // });
     },
 
     onLicenseUploadEvent() {
@@ -274,24 +246,251 @@ const LicenseGenerator = {
 
 
 const SearchLicense = {
+    _params: {
+        dateSort: "desc",
+        resellerNameSort: "asc",
+        companyNameSort: "asc",
+        dateFrom: "",
+        dateTo: "",
+        sortByDateType: "updatedAt",
+        filterByDateType: "updatedAt",
+        search: "",
+        currentPage: 1,
+        totalPage: 0,
+    },
+
     init() {
         this.onSearchLicenseEvent();
+        this.onFilterEvent();
+        this.onSortOrderEvent();
+        this.onPaginationEvent();
+
+        document.getElementById('searchModal').addEventListener('shown.bs.modal', () => {
+            console.log("Search modal opened");
+            document.getElementById("searchLicenseInput").focus();
+            this.searchLicenses(this._params.search ?? '');
+        });
+    },
+
+    onPaginationEvent() {
+        // const paginationDiv = document.getElementById("paginationDiv");
+        const prevBtn = document.getElementById("paginationPrevBtn");
+        const nextBtn = document.getElementById("paginationNextBtn");
+
+        nextBtn.addEventListener("click", () => {
+            if (this._params.currentPage < this._params.totalPage) {
+                this._params.currentPage += 1;
+                this.searchLicenses(this._params.search ?? '');
+            } else {
+                nextBtn.setAttribute("disabled", "true");
+            }
+
+            if (this._params.currentPage > 1) {
+                prevBtn.removeAttribute("disabled");
+            }
+            if (this._params.currentPage >= this._params.totalPage) {
+                nextBtn.setAttribute("disabled", "true");
+            }
+        });
+
+        if (this._params.currentPage === 1) {
+            prevBtn.setAttribute("disabled", "true");
+        }
+        prevBtn.addEventListener("click", () => {
+            if (this._params.currentPage > 1) {
+                this._params.currentPage -= 1;
+                this.searchLicenses(this._params.search ?? '');
+
+                if(this._params.currentPage === 1) {
+                    prevBtn.setAttribute("disabled", "true");
+                }
+            } else {
+                this._params.currentPage = 1;
+                prevBtn.setAttribute("disabled", "true");
+            }
+            if (this._params.currentPage < this._params.totalPage) {
+                nextBtn.removeAttribute("disabled");
+            }
+        });
+    },
+
+    closeDropdown(id) {
+        const dropdownToggle = document.getElementById(id);
+        const dropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
+        dropdown.hide();
+    },
+
+    onFilterEvent() {
+        let hasStartDate = false;
+        let hasEndDate = false;
+
+        const filterBtn = document.getElementById("filterBtn");
+        filterBtn.addEventListener("click", () => {
+            const filterStartDate = document.getElementById("filterStartDate").value;
+            const filterEndDate = document.getElementById("filterEndDate").value;
+            const filterByDateType = document.getElementById("filterByDateType").value;
+
+            this._params.dateFrom = filterStartDate;
+            this._params.dateTo = filterEndDate;
+            this._params.filterByDateType = filterByDateType;
+
+            this.closeDropdown('filterByDropdown');
+            this.searchLicenses(this._params.search ?? '');
+        });
+
+        const clearFilterBtn = document.getElementById("clearFilterBtn");
+        clearFilterBtn.addEventListener("click", () => {
+            const filterStartDate = document.getElementById("filterStartDate");
+            const filterEndDate = document.getElementById("filterEndDate");
+            const filterByDateType = document.getElementById("filterByDateType");
+            hasStartDate = false;
+            hasEndDate = false;
+            filterStartDate.value = "";
+            filterEndDate.value = "";
+            filterByDateType.value = "updatedAt";
+
+            this._params.filterByDateType = "updatedAt";
+            this._params.dateFrom = "";
+            this._params.dateTo = "";
+
+            this.closeDropdown('filterByDropdown');
+            this.searchLicenses(this._params.search ?? '');
+        });
+
+        const filterStartDate = document.getElementById("filterStartDate");
+        filterStartDate.addEventListener("change", (e) => {
+            const filterEndDate = document.getElementById("filterEndDate");
+            filterEndDate.min = e.target.value;
+
+            if (filterEndDate.value < e.target.value) {
+                filterEndDate.value = e.target.value;
+            }
+            hasStartDate = true;
+            hasEndDate = true;
+
+            const filterBtn = document.getElementById("filterBtn");
+            if (hasStartDate && hasEndDate) {
+                filterBtn.removeAttribute("disabled");
+            } else {
+                filterBtn.setAttribute("disabled", "true");
+            }
+        });
+
+
+        const filterEndDate = document.getElementById("filterEndDate");
+        filterEndDate.addEventListener("change", (e) => {
+            hasEndDate = true;
+
+            const filterBtn = document.getElementById("filterBtn");
+            if (hasStartDate && hasEndDate) {
+                filterBtn.removeAttribute("disabled");
+            } else {
+                filterBtn.setAttribute("disabled", "true");
+            }
+        })
+
+        document.getElementById('filterByDropdown').addEventListener('show.bs.dropdown', () => {
+
+            const filterBtn = document.getElementById("filterBtn");
+            if (hasStartDate && hasEndDate) {
+                filterBtn.removeAttribute("disabled");
+            } else {
+                filterBtn.setAttribute("disabled", "true");
+            }
+        });
+
+    },
+
+    onSortOrderEvent() {
+        const searchBtn = document.getElementById("sortByBtn");
+        searchBtn.addEventListener("click", () => {
+            const dateSort = document.querySelector('input[name="dateSort"]:checked').value;
+            const resellerNameSort = document.querySelector('input[name="resellerNameSort"]:checked').value;
+            const companyNameSort = document.querySelector('input[name="companyNameSort"]:checked').value;
+            const sortByDateType = document.getElementById("sortByDateType").value;
+
+            this._params.dateSort = dateSort;
+            this._params.resellerNameSort = resellerNameSort;
+            this._params.companyNameSort = companyNameSort;
+            this._params.sortByDateType = sortByDateType;
+
+            this.searchLicenses(this._params.search ?? '');
+            this.closeDropdown('sortByDropdown');
+        });
+
+        const clearSearchBtn = document.getElementById("clearSortByBtn");
+        clearSearchBtn.addEventListener("click", () => {
+            this._params.dateSort = "desc";
+            this._params.resellerNameSort = "asc";
+            this._params.companyNameSort = "asc";
+            this._params.sortByDateType = "updatedAt";
+
+            const dateDesc = document.getElementById("dateDescending");
+            const resellerNameAscending = document.getElementById("resellerNameAscending");
+            const companyNameAscending = document.getElementById("companyNameAscending");
+            const sortByDateType = document.getElementById("sortByDateType");
+            dateDesc.checked = true;
+            resellerNameAscending.checked = true;
+            companyNameAscending.checked = true;
+            sortByDateType.value = "updatedAt";
+            this.searchLicenses(this._params.search ?? '');
+            this.closeDropdown('sortByDropdown');
+        })
     },
 
     onSearchLicenseEvent() {
         const searchInput = document.getElementById("searchLicenseInput");
 
+        const searchData = (event) => {
+            this.searchLicenses(event.target.value);
+        }
+
+        const debounce = (callback, waitTime) => {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    callback(...args);
+                }, waitTime);
+            };
+        }
+
+        const debounceHandler = debounce(searchData, 500);
+        searchInput.addEventListener("input", debounceHandler);
+    },
+
+    searchLicenses(value) {
+        const dateFormat = {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        };
+
         function snakeToCamel(str) {
             return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
         }
 
-        const searchData = (event) => {
-            const value = event.target.value;
-            console.log("Searching...", value);
-            fetch(`./licenses/license.php?search=${encodeURIComponent(value)}`)
+        this._params.search = value;
+        const params = new URLSearchParams(this._params).toString();
+        // console.log("Searching...", value);
+        // console.log("Search params:", params);
+
+        // fetch(`./licenses/license.php?search=${encodeURIComponent(value)}`)
+        fetch(`./licenses/license.php?${params}`)
             .then(res => res.json())
             .then(data => {
                 console.log("Search results:", data);
+                
+                this._params.totalPage = data.metadata.totalPage;
+                this._params.currentPage = data.metadata.currentPage;
+
+                if (this._params.totalPage <= 1) {
+                    document.getElementById("paginationNextBtn").setAttribute("disabled", "true");
+                }
+                document.getElementById("paginationPageCount").textContent = `${this._params.currentPage} / ${this._params.totalPage}`;
+
                 const tableBody = document.getElementById("searchResultsTableBody");
 
                 tableBody.innerHTML = "";
@@ -306,23 +505,25 @@ const SearchLicense = {
                     const generateLicenseForm = document.getElementById("generateLicenseForm");
                     const currentUserId = generateLicenseForm.querySelector('input[name="userId"]').value;
 
-                    viewButton.classList.add("btn", "btn-outline-primary", "rounded-3", "py-1", "px-3");
+                    viewButton.classList.add("btn", "btn-outline-primary", "rounded-3", "btn-sm");
                     viewButton.setAttribute("data-bs-dismiss", "modal");
                     viewButton.innerText = "View";
                     viewButtontd.appendChild(viewButton);
+
+                    const licenseCreatedAt = new Date(item['license_created_at'].replace(' ', 'T')).toLocaleString('en-US', dateFormat);
+                    const licenseUpdatedAt = new Date(item['license_updated_at'].replace(' ', 'T')).toLocaleString('en-US', dateFormat);
+
                     row.innerHTML = `
-                        <td class="${currentUserId == item['user_id']? 'fw-medium': ''}">${item['reseller_name']}</td>
-                        <td>${item['company_name']}</td>
-                        <td>${item['license_created_at']}</td>
-                        <td>${item['license_updated_at']}</td>
+                        <td class="${currentUserId == item['user_id'] ? 'fw-medium' : ''}"><small>${item['reseller_name']}</small></td>
+                        <td><small>${item['company_name']}</small></td>
+                        <td><small>${licenseCreatedAt}</small></td>
+                        <td><small>${licenseUpdatedAt}</small></td>
                         `;
                     row.appendChild(viewButtontd);
 
                     viewButton.addEventListener("click", () => {
-                        // console.log("View button clicked for:", JSON.stringify(item));
 
                         for (const [key, value] of Object.entries(item)) {
-                            // console.log("key: ", snakeToCamel(key), "value: ", value);
                             let camelCaseKey = snakeToCamel(key);
                             if (camelCaseKey == "userId") continue;
                             if (camelCaseKey == "id") camelCaseKey = "licenseId";
@@ -331,7 +532,7 @@ const SearchLicense = {
                             if (input) {
                                 input.value = value;
 
-                                if (item["user_id"] != currentUserId)  {
+                                if (item["user_id"] != currentUserId) {
                                     input.disabled = true;
                                     document.getElementById("fileDownloadText").textContent = "Generate & Download License File";
                                 } else {
@@ -347,22 +548,24 @@ const SearchLicense = {
             .catch(err => {
                 console.error("Error fetching search results:", err);
             });
-        }
-
-        const debounce = (callback, waitTime) => {
-            let timer;
-            return (...args) => {
-                clearTimeout(timer);
-                timer = setTimeout(() => {
-                    callback(...args);
-                }, waitTime);
-            };
-        }
-
-        const debounceHandler = debounce(searchData, 800);
-        searchInput.addEventListener("input", debounceHandler);
     }
 }
 
+const IndexEvents = {
+    init() {
+        this.onDropdownEvent();
+    },
+
+    onDropdownEvent() {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+        });
+    }
+
+}
+
+IndexEvents.init();
 SearchLicense.init();
 LicenseGenerator.init();
