@@ -1,6 +1,25 @@
 <?php
 session_start();
 
+$res = isset($_COOKIE['remember_user']);
+if (isset($_COOKIE['remember_user']) && !isset($_SESSION['current_user'])) {
+    require './accounts/account.php';
+    $token = $_COOKIE['remember_user'];
+    $account = new Account();
+    $result = $account->getUserByToken($token);
+    if ($result['status'] === 'success') {
+        $user = $result['user'];
+        $_SESSION['current_user'] = [
+            'id' => $user['id'],
+            'username' => $user['username'],
+            'email' => $user['email'],
+            'account_type' => $user['account_type']
+        ];
+    } else {
+        header('Location: ./accounts/logout.php');
+    }
+}
+
 if (!isset($_SESSION['current_user'])) {
     header('Location: ./login.php');
     exit;
@@ -37,7 +56,12 @@ if (!isset($_SESSION['current_user'])) {
                     <?php
                     $user = $_SESSION['current_user'];
                     $username = strtoupper($user['username']);
-                    echo "<div class='text-secondary me-3 text-center fw-medium'>Welcome back, $username</div>";
+                    if ($user['account_type'] == 0) {
+                        $badgeElement = "<span class='badge text-bg-success'>Reseller</span>";
+                    } else {
+                        $badgeElement = "<span class='badge text-bg-primary'>Admin</span>";
+                    }
+                    echo "<div class='text-secondary me-3 text-center fw-medium'> $badgeElement Welcome back, $username</div>";
                     ?>
                 </div>
                 <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -56,16 +80,23 @@ if (!isset($_SESSION['current_user'])) {
         <input type="text" id="searchInput" class="form-control rounded-4 shadow-sm border-2 my-3" placeholder="Search for a license...">
     </div>
     <main class="mx-auto mb-5 bg-white border rounded-4 p-4 col-md-8 col-lg-7 col-sm-11 shadow-sm">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="me-4"></div>
-            <div class="ms-4 fw-medium fs-2 mb-3" style="color: #0071BC">License Generator</div>
+            <div class="ms-4 fw-medium fs-2 " style="color: #0071BC">License Generator</div>
             <div>
                 <input type="file" accept=".json" id="licenseUpload" class="d-none">
-                <label for="licenseUpload" class="btn btn-outline-dark rounded-3">
-                    Upload
+                <label for="licenseUpload" class="btn btn-sm btn-outline-dark rounded-3">
+                    Upload existing license
                 </label>
             </div>
         </div>
+        <?php
+        $userId = $_SESSION['current_user']['id'];
+        $userType = $_SESSION['current_user']['account_type'];
+
+        echo "<div id='cid' data-cid='$userId'></div>
+              <div id='utype' data-utype='$userType'></div>"
+        ?>
         <form id="generateLicenseForm">
             <?php
             $userId = $_SESSION['current_user']['id'];
@@ -476,17 +507,26 @@ $accountType = $user['account_type'];
 
 if ($accountType == 0) {
     echo "<script>
-    document.querySelectorAll('.permanent-license').forEach(function (element) {
-        element.classList.add('d-none');
-    });
-    </script>";
-} else {
-    echo "<script>
-    document.querySelectorAll('.permanent-license').forEach(function (element) {
-        element.classList.remove('d-none');
-    });
+    const mdcPermanentCount = document.getElementById('mdcPermanentCount');
+    const dncPermanentCount = document.getElementById('dncPermanentCount');
+    const hmiPermanentCount = document.getElementById('hmiPermanentCount');
+    if (mdcPermanentCount.value > 0 || dncPermanentCount.value > 0 || hmiPermanentCount > 0) {
+        document.querySelectorAll('.permanent-license').forEach(function (element) {
+            element.classList.remove('d-none');
+        });
+
+        mdcPermanentCount.disabled = true;
+        dncPermanentCount.disabled = true;
+        hmiPermanentCount.disabled = true;
+
+    } else {
+        document.querySelectorAll('.permanent-license').forEach(function (element) {
+            element.classList.add('d-none');
+        });
+    }
     </script>";
 }
+
 ?>
 
 

@@ -1,6 +1,12 @@
 <?php
 ob_start();
 session_start();
+
+if (isset($_COOKIE['remember_user'])) {
+    header('Location: ./index.php');
+    exit;
+}
+
 if (isset($_SESSION['current_user'])) {
     header('Location: ./index.php');
     exit;
@@ -20,22 +26,25 @@ if (isset($_SESSION['current_user'])) {
     <header>
         <nav class="navbar navbar-expand-sm border-bottom border-secondary bg-white">
             <div class="container-fluid ">
-                <img id="backToHomePage" src="./assets/icons/nexas-america.png" width="110" height="55" />
-                <div class="navbar-brand d-flex flex-column">
-                    <div class="text-secondary text-end fw-medium ms-3">
-                        Web License Generator
-                        <!-- <sup style="font-size: 9px; vertical-align: super">2025</sup> -->
+                <div class="d-flex align-items-center">
+                    <img id="backToHomePage" src="./assets/icons/nexas-america.png" width="110" height="55" />
+                    <div class="navbar-brand d-flex flex-column">
+                        <div class="text-secondary text-end fw-medium ms-3">
+                            Web License Generator
+                            <!-- <sup style="font-size: 9px; vertical-align: super">2025</sup> -->
+                        </div>
                     </div>
+
                 </div>
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                     data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false"
                     aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNavDropdown">
                     <ul class="navbar-nav"></ul>
-                </div>
+                </div> -->
             </div>
         </nav>
     </header>

@@ -1,5 +1,11 @@
 <?php
 session_start();
+
+if (isset($_COOKIE['remember_user'])) {
+    header('Location: ./index.php');
+    exit;
+}
+
 if (isset($_SESSION['current_user'])) {
     header('Location: ./index.php');
     exit;
@@ -19,22 +25,25 @@ if (isset($_SESSION['current_user'])) {
     <header>
         <nav class="navbar navbar-expand-sm border-bottom border-secondary bg-white">
             <div class="container-fluid ">
-                <img id="backToHomePage" src="./assets/icons/nexas-america.png" width="110" height="55" />
-                <div class="navbar-brand d-flex flex-column">
-                    <div class="text-secondary text-end fw-medium ms-3">
-                        Web License Generator
-                        <!-- <sup style="font-size: 9px; vertical-align: super">2025</sup> -->
+                <div class="d-flex align-items-center">
+                    <img id="backToHomePage" src="./assets/icons/nexas-america.png" width="110" height="55" />
+                    <div class="navbar-brand d-flex flex-column">
+                        <div class="text-secondary text-end fw-medium ms-3">
+                            Web License Generator
+                            <!-- <sup style="font-size: 9px; vertical-align: super">2025</sup> -->
+                        </div>
                     </div>
+
                 </div>
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                     data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false"
                     aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNavDropdown">
                     <ul class="navbar-nav"></ul>
-                </div>
+                </div> -->
             </div>
         </nav>
     </header>
@@ -42,7 +51,7 @@ if (isset($_SESSION['current_user'])) {
     <main class="mx-auto my-5 bg-white border rounded-4 p-4 col-md-8 col-lg-5 col-sm-11 shadow-sm">
         <div class="fw-medium fs-2 text-center" style="color: #0071BC">Login</div>
         <div class="text-center mb-3">Don't have an account? <a class="fw-bold" href="./register.php">Sign up</a> for an account now.</div>
-        <form class="mx-3" method="post" action="">
+        <form class="mx-5" method="post" action="">
             <div class="mb-2">
                 <input name="email" type="email" class="form-control  rounded-3 border-2" id="email" placeholder="Email" required>
             </div>
@@ -50,7 +59,7 @@ if (isset($_SESSION['current_user'])) {
                 <input name="password" type="password" class="form-control rounded-3 border-2" id="password" placeholder="Password" required>
             </div>
             <div class="mb-2 form-check">
-                <input name="rememberMe" type="checkbox" class="form-check-input" id="rememberMe">
+                <input name="rememberMe" type="checkbox" class="form-check-input border-2" id="rememberMe">
                 <label class="form-check-label" for="rememberMe">Remember me</label>
             </div>
             <div class="text-end">
@@ -111,11 +120,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // echo "<script>console.log('Login result: " . json_encode($result) . "');</script>";
     if ($result['status'] === 'success') {
         $user = $result['user'];
+
         $_SESSION['toast'] = [
             'status' => 'success',
             'header' => 'Login successful',
             'message' => 'Welcome back, ' . strtoupper($user['username']) . '!'
         ];
+
+        if (isset($_POST['rememberMe'])) {
+            $token = bin2hex(random_bytes(32));
+
+            $account->generateUserToken($user['id'], $token);
+            setcookie("remember_user", $token, time() + (30 * 24 * 60 * 60), "/"); // 30 days
+        }
 
         $_SESSION['current_user'] = [
             'id' => $user['id'],

@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 
 $currentUser = $_SESSION['current_user'] ?? null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
-    if ($currentUser['id'] != $_POST['userId']) {
+    if ($currentUser['id'] != $_POST['userId']  && $currentUser['account_type'] == 0) {
         http_response_code(403);
         echo json_encode(['error' => 'Invalid user']);
         exit;
@@ -32,11 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
     $hmiTrialDays = $_POST['hmiTrialDays'] ?? 40;
     $annualMaintenanceExpDate = $_POST['annualMaintenanceExpDate'] ?? null;
 
-    if ($currentUser['account_type'] == '0' && (!empty($mdcPermanentCount) || !empty($dncPermanentCount) || !empty($hmiPermanentCount))) {
-        $mdcPermanentCount = 0;
-        $dncPermanentCount = 0;
-        $hmiPermanentCount = 0;
-    }
+    // if ($currentUser['account_type'] == '0' && (!empty($mdcPermanentCount) || !empty($dncPermanentCount) || !empty($hmiPermanentCount))) {
+    //     $mdcPermanentCount = 0;
+    //     $dncPermanentCount = 0;
+    //     $hmiPermanentCount = 0;
+    // }
     if (empty($codeVerifier) || empty($resellerName) || empty($resellerCode) || empty($companyName) || empty($customerName) || empty($customerEmailAddress) || empty($customerAddress) || empty($customerContactNumber)) {
         http_response_code(400);
         echo json_encode(['error' => 'Missing required fields']);
@@ -55,6 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
         exit;
     }
     try {
+        // Make sure the licenseId exists in the database and belongs to the user
+        // At this point, admin account can update all licenses, but reseller account can only update their own licenses
         if (!empty($licenseId) && ctype_digit($licenseId)) {
             $checkStmt = $conn->prepare("SELECT id FROM licenses WHERE id = ? AND user_id = ?");
             $checkStmt->bind_param("ii", $licenseId, $userId);
@@ -66,9 +68,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
                 exit;
             }
 
-            $stmt = $conn->prepare("UPDATE licenses SET code_verifier = ?, reseller_name = ?, reseller_code = ?, technician = ?, company_name = ?, customer_name = ?, customer_email = ?, customer_address = ?, customer_contact_number = ?, mdc_permanent_count = ?, mdc_trial_count = ?, mdc_trial_days = ?, dnc_permanent_count = ?, dnc_trial_count = ?, dnc_trial_days = ?, hmi_permanent_count = ?, hmi_trial_count = ?, hmi_trial_days = ?, annual_maintenance_expiration_date = ? WHERE id = ? AND user_id = ?");
-            $stmt->bind_param("sssssssssiiiiiiiiisii", $codeVerifier, $resellerName, $resellerCode, $technician, $companyName, $customerName, $customerEmailAddress, $customerAddress, $customerContactNumber, $mdcPermanentCount, $mdcTrialCount, $mdcTrialDays, $dncPermanentCount, $dncTrialCount, $dncTrialDays, $hmiPermanentCount, $hmiTrialCount, $hmiTrialDays, $annualMaintenanceExpDate, $licenseId, $userId);
-            $stmt->execute();
+            // Only admin account can update the permanent count of licenses
+            if ($currentUser['account_type'] == '1') {
+                $stmt = $conn->prepare("UPDATE licenses 
+                SET code_verifier = ?, reseller_name = ?, reseller_code = ?, technician = ?, company_name = ?, 
+                customer_name = ?, customer_email = ?, customer_address = ?, customer_contact_number = ?, 
+                mdc_permanent_count = ?, mdc_trial_count = ?, mdc_trial_days = ?, dnc_permanent_count = ?, 
+                dnc_trial_count = ?, dnc_trial_days = ?, hmi_permanent_count = ?, hmi_trial_count = ?, 
+                hmi_trial_days = ?, annual_maintenance_expiration_date = ? 
+                WHERE id = ? AND user_id = ?");
+                $stmt->bind_param("sssssssssiiiiiiiiisii", $codeVerifier, $resellerName, $resellerCode, $technician, $companyName, $customerName, $customerEmailAddress, $customerAddress, $customerContactNumber, $mdcPermanentCount, $mdcTrialCount, $mdcTrialDays, $dncPermanentCount, $dncTrialCount, $dncTrialDays, $hmiPermanentCount, $hmiTrialCount, $hmiTrialDays, $annualMaintenanceExpDate, $licenseId, $userId);
+                $stmt->execute();
+            } else {
+                $stmt = $conn->prepare("UPDATE licenses 
+                SET code_verifier = ?, reseller_name = ?, reseller_code = ?, technician = ?, company_name = ?, 
+                customer_name = ?, customer_email = ?, customer_address = ?, customer_contact_number = ?, 
+                mdc_trial_count = ?, mdc_trial_days = ?, dnc_trial_count = ?, dnc_trial_days = ?,  hmi_trial_count = ?, 
+                hmi_trial_days = ?, annual_maintenance_expiration_date = ? 
+                WHERE id = ? AND user_id = ?");
+                $stmt->bind_param("sssssssssiiiiiisii", $codeVerifier, $resellerName, $resellerCode, $technician, $companyName, $customerName, $customerEmailAddress, $customerAddress, $customerContactNumber, $mdcTrialCount, $mdcTrialDays, $dncTrialCount, $dncTrialDays, $hmiTrialCount, $hmiTrialDays, $annualMaintenanceExpDate, $licenseId, $userId);
+                $stmt->execute();
+            }
             $lastId = $licenseId;
             $isUpdated = true;
         } else {
@@ -81,14 +101,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
 
         $createdAt = null;
         $updatedAt = null;
+        $resMDCPermanentCount = null;
+        $resDNCPermanentCount = null;
+        $resHMIPermanentCount = null;
 
-        $fetchStmt = $conn->prepare("SELECT license_created_at, license_updated_at FROM licenses WHERE id = ?");
+        $fetchStmt = $conn->prepare("SELECT license_created_at, license_updated_at, mdc_permanent_count, dnc_permanent_count, hmi_permanent_count FROM licenses WHERE id = ?");
         $fetchStmt->bind_param("i", $lastId);
         $fetchStmt->execute();
-        $fetchStmt->bind_result($createdAt, $updatedAt);
+        $fetchStmt->bind_result($createdAt, $updatedAt, $resMDCPermanentCount, $resDNCPermanentCount, $resHMIPermanentCount);
         $fetchStmt->fetch();
 
-        echo json_encode(['id' => $lastId, 'createdAt' => $createdAt, 'updatedAt' => $updatedAt, 'isUpdated' => $isUpdated, 'message' => 'License saved successfully']);
+        echo json_encode([
+            'license' =>
+            [
+                'id' => $lastId,
+                'createdAt' => $createdAt,
+                'updatedAt' => $updatedAt,
+                'isUpdated' => $isUpdated,
+                'mdc' => $resMDCPermanentCount,
+                'dnc' => $resDNCPermanentCount,
+                'hmi' => $resHMIPermanentCount
+            ],
+            'message' => 'License saved successfully'
+        ]);
     } catch (Exception $e) {
         http_response_code(400);
         echo json_encode(['error' => 'Failed to save license. Please try again later.', 'err' => $e->getMessage()]);

@@ -55,6 +55,63 @@ class Account
         }
     }
 
+    public function generateUserToken($userId, $token)
+    {
+        $conn = new mysqli("localhost", "root", "", "testdb");
+        if ($conn->connect_error) {
+            return ["status" => "error", "message" => "Something went wrong. Please try again later."];
+        }
+
+        try {
+
+            $stmt = $conn->prepare("INSERT INTO users_tokens (user_id, token) VALUES (?, ?)");
+            $stmt->bind_param("is", $userId, $token);
+            $stmt->execute();
+            return ["status" => "success"];
+        } catch (Exception $e) {
+            return ["status" => "error", "message" => "Unable to save user token"];
+        } finally {
+            $stmt->close();
+            $conn->close();
+        }
+    }
+
+    public function getUserByToken($token)
+    {
+        $days = 30;
+        $conn = new mysqli("localhost", "root", "", "testdb");
+        if ($conn->connect_error) {
+            return ["status" => "error", "message" => "Something went wrong. Please try again later."];
+        }
+
+        try {
+            $stmt = $conn->prepare("SELECT user_id FROM users_tokens WHERE token = ? AND inserted_at > NOW() - INTERVAL ? DAY");
+            $stmt->bind_param("si", $token, $days);
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+            if ($row = $result->fetch_assoc()) {
+                $userId = $row['user_id'];
+                $stmtUser = $conn->prepare("SELECT * FROM users WHERE id = ?");
+                $stmtUser->bind_param("i", $userId);
+                $stmtUser->execute();
+
+                $userResult = $stmtUser->get_result();
+                if ($userResult->num_rows > 0) {
+                    $user = $userResult->fetch_assoc();
+                    return ["status" => "success", "message" => "User found", "user" => $user];
+                }
+            } else {
+                return ["status" => "error", "message" => "User not found"];
+            }
+        } catch (Exception $e) {
+            return ["status" => "error", "message" => $e->getMessage()];
+        } finally {
+            $stmt->close();
+            $conn->close();
+        }
+    }
+
     public function initRegistrationFields()
     {
         $this->username = $_POST['username'] ?? null;

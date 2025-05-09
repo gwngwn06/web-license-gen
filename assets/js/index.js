@@ -24,6 +24,7 @@ const LicenseGenerator = {
             // formData.append("annualMaintenanceExpDate", this._annualMaintenanceExpDate);
 
             data = Object.fromEntries(formData.entries());
+            console.log(JSON.stringify(data));
 
 
             fetch("./licenses/license.php", {
@@ -32,7 +33,6 @@ const LicenseGenerator = {
             })
                 .then((response) => {
                     if (!response.ok) {
-                        // This block runs for 4xx or 5xx responses
                         return response.json().then(err => {
                             throw new Error(err.error || 'Unknown error');
                         });
@@ -40,11 +40,17 @@ const LicenseGenerator = {
                     return response.json();
                 })
                 .then((result) => {
+                    // NOTE: PREFER BACKEND ENCRYPTION / DECRYPTION
                     console.log("License file saved successfully:", result);
-                    data["licenseId"] = result.id;
-                    data["licenseCreatedAt"] = result.createdAt;
-                    data['licenseUpdatedAt'] = result.updatedAt;
+                    const license = result.license;
+                    data["licenseId"] = license.id;
+                    data["licenseCreatedAt"] = license.createdAt;
+                    data['licenseUpdatedAt'] = license.updatedAt;
+                    data['mdcPermanentCount'] = license.mdc;
+                    data['dncPermanentCount'] = license.dnc;
+                    data['hmiPermanentCount'] = license.hmi;
                     delete data["userId"];
+
 
                     this._encrypt(JSON.stringify(data), this._secretkey).then(({ savedCiphertext, iv, salt }) => {
                         const encryptedData = {
@@ -71,11 +77,11 @@ const LicenseGenerator = {
                         }
                         console.log("download unencryptedData: ", unencryptedData);
                         console.log("download encryptedData:", encryptedData);
-                        this._downloadJSONLicenseFile(unencryptedData, "UNENCRYPTED_" + companyName, result.createdAt);
-                        this._downloadJSONLicenseFile(encryptedData, companyName, result.createdAt);
+                        this._downloadJSONLicenseFile(unencryptedData, "UNENCRYPTED_" + companyName, license.createdAt);
+                        this._downloadJSONLicenseFile(encryptedData, companyName, license.createdAt);
                         form.reset();
 
-                        if (result.isUpdated) {
+                        if (license.isUpdated) {
                             this._showToastMessage("Your license file has been updated.", "info");
                         } else {
                             this._showToastMessage("Your license has been generated.", "info");
@@ -101,7 +107,7 @@ const LicenseGenerator = {
         const licenseUpload = document.getElementById("licenseUpload");
 
         licenseUpload.addEventListener("click", (e) => {
-            licenseUpload.value = null; // Clear the file input value
+            licenseUpload.value = null; 
         });
 
         licenseUpload.addEventListener("change", (e) => {
@@ -116,12 +122,35 @@ const LicenseGenerator = {
                         console.log("decryptedData: ", decryptedData);
                         this._showToastMessage(null, "success");
 
+                        const utypeDiv = document.getElementById("utype");
+                        const utype = utypeDiv.getAttribute('data-utype');
+                        if (decryptedData['mdcPermanentCount'] != 0 || decryptedData['dncPermanentCount'] != 0 || decryptedData['hmiPermanentCount'] != 0) {
+                            const mdcPermanentCount = document.getElementById('mdcPermanentCount');
+                            const dncPermanentCount = document.getElementById('dncPermanentCount');
+                            const hmiPermanentCount = document.getElementById('hmiPermanentCount');
+                            document.querySelectorAll('.permanent-license').forEach(function (element) {
+                                element.classList.remove('d-none');
+                            });
+                            if (utype == "0") {
+                                mdcPermanentCount.disabled = true;
+                                dncPermanentCount.disabled = true;
+                                hmiPermanentCount.disabled = true;
+                            } else {
+                                mdcPermanentCount.disabled = false;
+                                dncPermanentCount.disabled = false;
+                                hmiPermanentCount.disabled = false;
+                            }
+                        } else {
+                            document.querySelectorAll('.permanent-license').forEach(function (element) {
+                                element.classList.add('d-none');
+                            });
+                        }
+
                         const generateLicenseForm = document.getElementById("generateLicenseForm");
                         for (const [key, value] of Object.entries(decryptedData)) {
                             const input = generateLicenseForm.querySelector(`input[name="${key}"]`);
                             if (input) {
                                 input.value = value;
-                                input.disabled = false;
                             }
                         }
 
@@ -488,6 +517,8 @@ const SearchLicense = {
 
                 if (this._params.totalPage <= 1) {
                     document.getElementById("paginationNextBtn").setAttribute("disabled", "true");
+                } else {
+                    document.getElementById("paginationNextBtn").removeAttribute("disabled");
                 }
                 document.getElementById("paginationPageCount").textContent = `${this._params.currentPage} / ${this._params.totalPage}`;
 
@@ -503,7 +534,11 @@ const SearchLicense = {
                     const viewButtontd = document.createElement("td");
                     const viewButton = document.createElement("button");
                     const generateLicenseForm = document.getElementById("generateLicenseForm");
-                    const currentUserId = generateLicenseForm.querySelector('input[name="userId"]').value;
+                    const currentLicenseUserId = generateLicenseForm.querySelector('input[name="userId"]').value;
+                    const cidDiv = document.getElementById("cid");
+                    const cid = cidDiv.getAttribute('data-cid');
+                    const utypeDiv = document.getElementById("utype");
+                    const utype = utypeDiv.getAttribute('data-utype');
 
                     viewButton.classList.add("btn", "btn-outline-primary", "rounded-3", "btn-sm");
                     viewButton.setAttribute("data-bs-dismiss", "modal");
@@ -514,8 +549,8 @@ const SearchLicense = {
                     const licenseUpdatedAt = new Date(item['license_updated_at'].replace(' ', 'T')).toLocaleString('en-US', dateFormat);
 
                     row.innerHTML = `
-                        <td class="${currentUserId == item['user_id'] ? 'fw-medium' : ''}"><small>${item['reseller_name']}</small></td>
-                        <td><small>${item['company_name']}</small></td>
+                        <td class="${currentLicenseUserId == item['user_id'] ? 'fw-medium' : ''}"><small>${item['reseller_name'].toUpperCase()}</small></td>
+                        <td><small>${item['company_name'].toUpperCase()}</small></td>
                         <td><small>${licenseCreatedAt}</small></td>
                         <td><small>${licenseUpdatedAt}</small></td>
                         `;
@@ -523,22 +558,38 @@ const SearchLicense = {
 
                     viewButton.addEventListener("click", () => {
 
+                        if (item['mdc_permanent_count'] != 0 || item['dnc_permanent_count'] != 0 || item['hmi_permanent_count'] != 0) {
+                            const mdcPermanentCount = document.getElementById('mdcPermanentCount');
+                            const dncPermanentCount = document.getElementById('dncPermanentCount');
+                            const hmiPermanentCount = document.getElementById('hmiPermanentCount');
+                            document.querySelectorAll('.permanent-license').forEach(function (element) {
+                                element.classList.remove('d-none');
+                            });
+                            if (utype == "0") {
+                                mdcPermanentCount.disabled = true;
+                                dncPermanentCount.disabled = true;
+                                hmiPermanentCount.disabled = true;
+                            } else {
+                                mdcPermanentCount.disabled = false;
+                                dncPermanentCount.disabled = false;
+                                hmiPermanentCount.disabled = false;
+                            }
+                        } else if (utype == '0') {
+                            document.querySelectorAll('.permanent-license').forEach(function (element) {
+                                element.classList.add('d-none');
+                            });
+                        }
+
                         for (const [key, value] of Object.entries(item)) {
                             let camelCaseKey = snakeToCamel(key);
-                            if (camelCaseKey == "userId") continue;
+                            // if (camelCaseKey == "userId") continue;
                             if (camelCaseKey == "id") camelCaseKey = "licenseId";
 
                             const input = generateLicenseForm.querySelector(`input[name="${camelCaseKey}"]`);
                             if (input) {
                                 input.value = value;
 
-                                if (item["user_id"] != currentUserId) {
-                                    input.disabled = true;
-                                    document.getElementById("fileDownloadText").textContent = "Generate & Download License File";
-                                } else {
-                                    input.disabled = false;
-                                    document.getElementById("fileDownloadText").textContent = "Update License File";
-                                }
+                                document.getElementById("fileDownloadText").textContent = "Update License File";
                             }
                         }
                     });
