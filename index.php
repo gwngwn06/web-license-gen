@@ -1,7 +1,6 @@
 <?php
 session_start();
 
-$res = isset($_COOKIE['remember_user']);
 if (isset($_COOKIE['remember_user']) && !isset($_SESSION['current_user'])) {
     require './accounts/account.php';
     $token = $_COOKIE['remember_user'];
@@ -341,7 +340,8 @@ if (!isset($_SESSION['current_user'])) {
 
                 <div class="modal-body">
                     <input type=" text" id="searchLicenseInput" class="form-control rounded-4 border-2 my-1" placeholder="Search for a license...">
-                    <div class="d-flex justify-content-end gap-2 mt-3 mb-2">
+                    <div class="mb-4"></div>
+                    <!-- <div class="d-flex justify-content-end gap-2 mt-3 mb-2">
                         <div class="dropdown">
                             <button id="sortByDropdown" class="btn btn-outline-secondary btn-sm dropdown-toggle rounded-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 Sort by
@@ -444,15 +444,15 @@ if (!isset($_SESSION['current_user'])) {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> -->
 
                     <table id="licenseTable" class="table table-hover">
-                        <thead>
+                        <thead style="cursor: pointer;">
                             <tr>
-                                <th scope="col">Reseller Name</th>
-                                <th scope="col">Company name</th>
-                                <th scope="col">Date created</th>
-                                <th scope="col">Date updated</th>
+                                <th data-order="asc" data-sort="reseller" scope="col">Reseller Name <img class="sorting-order" src="./assets/icons/caret-up-fill.svg" /></th>
+                                <th data-order="asc" data-sort="company" scope="col">Company name <img class="sorting-order" src="./assets/icons/caret-up-fill.svg" /></th>
+                                <th data-order="desc" data-sort="created" scope="col">Date created <img class="sorting-order" src="./assets/icons/caret-down-fill.svg" /></th>
+                                <th data-order="desc" data-sort="updated" scope="col">Date updated <img class="sorting-order" src="./assets/icons/caret-down-fill.svg" /></th>
                                 <th scope="col">Action</th>
                             </tr>
                         </thead>

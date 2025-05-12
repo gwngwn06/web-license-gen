@@ -145,6 +145,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
     $dateSort = in_array($_GET['dateSort'] ?? '', ['asc', 'desc']) ? $_GET['dateSort'] : 'desc';
     $resellerNameSort = in_array($_GET['resellerNameSort'] ?? '', ['asc', 'desc']) ? $_GET['resellerNameSort'] : 'asc';
     $companyNameSort = in_array($_GET['companyNameSort'] ?? '', ['asc', 'desc']) ? $_GET['companyNameSort'] : 'asc';
+    $selectedColumnHeader = in_array($_GET['selectedColumnHeader'] ?? '', ['reseller', 'company', 'created', 'updated']) ? $_GET['selectedColumnHeader'] : 'reseller';
+    $selectedOrder = in_array($_GET['selectedOrder'] ?? '', ['asc', 'desc']) ? $_GET['selectedOrder'] : 'asc';
+
     $dateFrom = $_GET['dateFrom'] ?? null;
     $dateTo = $_GET['dateTo'] ?? null;
 
@@ -198,23 +201,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
             $types = "isssss";
         }
 
-        if ($dateFrom && $dateTo) {
-            if ($filterByDateType == 'createdAt') {
-                $sql .= " AND DATE(license_created_at) BETWEEN ? AND ?";
-            } else {
-                $sql .= " AND DATE(license_updated_at) BETWEEN ? AND ?";
-            }
-            $params[] = $dateFrom;
-            $params[] = $dateTo;
-            $types .= "ss";
-        }
+        // if ($dateFrom && $dateTo) {
+        //     if ($filterByDateType == 'createdAt') {
+        //         $sql .= " AND DATE(license_created_at) BETWEEN ? AND ?";
+        //     } else {
+        //         $sql .= " AND DATE(license_updated_at) BETWEEN ? AND ?";
+        //     }
+        //     $params[] = $dateFrom;
+        //     $params[] = $dateTo;
+        //     $types .= "ss";
+        // }
 
-        if ($sortByDateType == 'createdAt') {
-            $sql .= " ORDER BY license_created_at $dateSort, reseller_name $resellerNameSort, company_name $companyNameSort LIMIT $limit OFFSET $offset";
-        } else if ($sortByDateType == 'updatedAt') {
-            $sql .= " ORDER BY license_updated_at $dateSort, reseller_name $resellerNameSort, company_name $companyNameSort LIMIT $limit OFFSET $offset";
-        } else {
-            $sql .= " ORDER BY reseller_name $resellerNameSort, company_name $companyNameSort LIMIT $limit OFFSET $offset";
+        // if ($sortByDateType == 'createdAt') {
+        //     $sql .= " ORDER BY license_created_at $dateSort, reseller_name $resellerNameSort, company_name $companyNameSort LIMIT $limit OFFSET $offset";
+        // } else if ($sortByDateType == 'updatedAt') {
+        //     $sql .= " ORDER BY license_updated_at $dateSort, reseller_name $resellerNameSort, company_name $companyNameSort LIMIT $limit OFFSET $offset";
+        // } else {
+        //     $sql .= " ORDER BY reseller_name $resellerNameSort, company_name $companyNameSort LIMIT $limit OFFSET $offset";
+        // }
+
+        if ($selectedColumnHeader == "reseller") {
+            $sql .= " ORDER BY reseller_name $selectedOrder LIMIT $limit OFFSET $offset";
+        } else if ($selectedColumnHeader == "company") {
+            $sql .= " ORDER BY company_name $selectedOrder LIMIT $limit OFFSET $offset";
+        } else if ($selectedColumnHeader == "updated") {
+            $sql .= " ORDER BY license_updated_at $selectedOrder LIMIT $limit OFFSET $offset";
+        } else if ($selectedColumnHeader == "created") {
+            $sql .= " ORDER BY license_created_at $selectedOrder LIMIT $limit OFFSET $offset";
         }
 
 
