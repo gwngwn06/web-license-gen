@@ -63,28 +63,30 @@ if (!isset($_SESSION['current_user'])) {
                     echo "<div class='text-secondary me-3 text-center fw-medium'> $badgeElement Welcome back, $username</div>";
                     ?>
                 </div>
-                <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false"
-                    aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNavDropdown">
-                    <ul class="navbar-nav"></ul>
-                </div> -->
             </div>
         </nav>
     </header>
 
-    <div class="mx-auto text-center col-11 col-md-7 col-sm-10" data-bs-toggle="modal" data-bs-target="#searchModal">
-        <input type="text" id="searchInput" class="form-control rounded-4 shadow-sm border-2 my-3" placeholder="Search for a license...">
+    <div class="mx-auto mx-3 text-center col-12 col-md-8 col-sm-11 col-lg-7 d-flex align-items-center position-relative" data-bs-toggle="modal" data-bs-target="#searchModal">
+        <svg style="left: 16px; top: 50%; transform: translateY(-50%);" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search position-absolute" viewBox="0 0 16 16">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+        </svg>
+        <input type="text" id="searchInput" class="form-control rounded-4 shadow-sm border ps-5 mx-1 my-2 my-md-3" placeholder="Search for licenses...">
     </div>
     <main class="mx-auto mb-5 bg-white border rounded-4 p-4 col-md-8 col-lg-7 col-sm-11 shadow-sm">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="me-4"></div>
-            <div class="ms-4 fw-medium fs-2 " style="color: #0071BC">License Generator</div>
+        <div class="d-flex justify-content-between align-items-center mb-3 position-relative">
+            <div class="d-none d-md-block" style="visibility: hidden;">
+            </div>
+            <div class="fw-medium fs-2 text-primary d-block d-md-none">
+                License Generator
+            </div>
+
+            <div class="fw-medium fs-2 text-primary
+                position-absolute start-50 translate-middle-x 
+                d-none d-md-block" style="color: #0071BC">License Generator</div>
             <div>
                 <input type="file" accept=".json" id="licenseUpload" class="d-none">
-                <label for="licenseUpload" class="btn btn-sm btn-outline-dark rounded-3">
+                <label for="licenseUpload" class="btn btn-sm btn-outline-success rounded-3">
                     Upload existing license
                 </label>
             </div>
@@ -267,57 +269,7 @@ if (!isset($_SESSION['current_user'])) {
 
     </main>
 
-    <div class="modal fade" id="uploadSecretKeyModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-        aria-labelledby="uploadSecretKeyModal" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="secretkeyHeader">Enter the secret key to decrypt the license file
-                    </h1>
-                </div>
-                <div class="modal-body">
-                    <form id="uploadSecretKeyForm">
-                        <div class="mb-2">
-                            <label for="uploadSecretKeyInput" class="form-label text-secondary fw-medium">Secret
-                                Key</label>
-                            <input id="uploadSecretKeyInput" type="password" class="form-control rounded-3 border-2"
-                                minlength="4" maxlength="30" required>
-                        </div>
-                        <div class="text-end">
-                            <button id="uploadSecretKeySubmitBtn" type="submit" class="btn btn-primary">Enter</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="modal fade" id="secretkeyModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-        aria-labelledby="secretkeyModal" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="secretkeyHeader">New secret key</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="secretkeyForm">
-                        <div class="mb-2">
-                            <label for="secretkeyInput" class="form-label text-secondary fw-medium">Secret Key</label>
-                            <input id="secretkeyInput" type="password" class="form-control rounded-3 border-2"
-                                minlength="4" maxlength="30" autofocus required>
-                        </div>
-                        <div class="text-end">
-                            <button id="secretkeyCancelBtn" type="button" class="btn btn-secondary"
-                                data-bs-dismiss="modal">Cancel</button>
-                            <button id="secretkeySubmitBtn" type="submit" class="btn btn-primary">Download
-                                License</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <div class="toast-container  position-fixed bottom-0 end-0 p-3">
         <div id="liveToast" class="toast text-bg-primary" role="alert" aria-live="assertive" aria-atomic="true">
@@ -339,112 +291,13 @@ if (!isset($_SESSION['current_user'])) {
             <div class="modal-content" style="height: 80vh; overflow-y: auto;">
 
                 <div class="modal-body">
-                    <input type=" text" id="searchLicenseInput" class="form-control rounded-4 border-2 my-1" placeholder="Search for a license...">
+                    <div class="d-flex align-items-center position-relative">
+                        <svg style="left: 16px; top: 50%; transform: translateY(-50%);" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search position-absolute" viewBox="0 0 16 16">
+                            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+                        </svg>
+                        <input type=" text" id="searchLicenseInput" class="form-control rounded-4 border-2 ps-5 my-1" placeholder="Search for licenses...">
+                    </div>
                     <div class="mb-4"></div>
-                    <!-- <div class="d-flex justify-content-end gap-2 mt-3 mb-2">
-                        <div class="dropdown">
-                            <button id="sortByDropdown" class="btn btn-outline-secondary btn-sm dropdown-toggle rounded-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Sort by
-                            </button>
-                            <div class="dropdown-menu shadow p-2" style="width: 250px;">
-                                <div class="mb-2">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="text-secondary mb-1">Date</div>
-                                        <select id="sortByDateType" name="sortByDateType" class="form-select form-select-sm w-auto">
-                                            <option value="updatedAt" selected>Updated</option>
-                                            <option value="createdAt">Created</option>
-                                            <option value="none">None</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="dateSort" id="dateAscending" value="asc">
-                                        <label class="form-check-label" for="dateAscending">
-                                            Ascending
-                                        </label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="dateSort" id="dateDescending" value="desc" checked>
-                                        <label class="form-check-label" for="dateDescending">
-                                            Descending
-                                        </label>
-                                    </div>
-                                </div>
-                                <hr class="dropdown-divider">
-                                </hr>
-                                <div class="mb-2">
-                                    <div class="text-secondary mb-1">Reseller</div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="resellerNameSort" id="resellerNameAscending" value="asc" checked>
-                                        <label class="form-check-label" for="resellerNameAscending">
-                                            A-Z
-                                        </label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="resellerNameSort" id="resellerNameDescending" value="desc">
-                                        <label class="form-check-label" for="resellerNameDescending">
-                                            Z-A
-                                        </label>
-                                    </div>
-                                </div>
-                                <hr class="dropdown-divider">
-                                </hr>
-                                <div class="mb-2">
-                                    <div class="text-secondary mb-1">Company</div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="companyNameSort" id="companyNameAscending" value="asc" checked>
-                                        <label class="form-check-label" for="companyNameAscending">
-                                            A-Z
-                                        </label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="companyNameSort" id="companyNameDescending" value="desc">
-                                        <label class="form-check-label" for="companyNameDescending">
-                                            Z-A
-                                        </label>
-                                    </div>
-                                </div>
-                                <hr class="dropdown-divider">
-                                </hr>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <button id="clearSortByBtn" class="btn btn-outline-secondary btn-sm rounded-3">Reset</button>
-                                    <button id="sortByBtn" class="btn btn-primary btn-sm rounded-3">Apply</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="dropdown">
-                            <button id="filterByDropdown" class="btn btn-outline-secondary btn-sm dropdown-toggle rounded-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Filter
-                            </button>
-                            <div class="dropdown-menu shadow p-2">
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="mb-1 fw-medium">Date range</div>
-                                        <select id="filterByDateType" name="filterByDateType" class="form-select form-select-sm w-auto">
-                                            <option value="updatedAt" selected>Updated</option>
-                                            <option value="createdAt">Created</option>
-                                        </select>
-                                    </div>
-                                    <div class="d-flex gap-2">
-                                        <div>
-                                            <label class="text-secondary" for="filterStartDate"><small>From</small></label>
-                                            <input type="date" id="filterStartDate" class="form-control rounded-3 border-2">
-                                        </div>
-                                        <div>
-                                            <label class="text-secondary" for="filterEndDate"><small>To</small></label>
-                                            <input type="date" id="filterEndDate" class="form-control rounded-3 border-2">
-                                        </div>
-                                    </div>
-                                </div>
-                                <hr class="dropdown-divider">
-                                </hr>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <button id="clearFilterBtn" class="btn btn-outline-secondary btn-sm rounded-3">Reset</button>
-                                    <button id="filterBtn" class="btn btn-primary btn-sm rounded-3">Apply</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->
 
                     <table id="licenseTable" class="table table-hover">
                         <thead style="cursor: pointer;">
@@ -457,9 +310,9 @@ if (!isset($_SESSION['current_user'])) {
                             </tr>
                         </thead>
                         <tbody id="searchResultsTableBody">
-
                         </tbody>
                     </table>
+                    <div id="noLicenseMessage" class="text-center text-secondary fs-4 my-5" hidden>No available license</div>
                     <div id="paginationDiv" class="d-flex justify-content-center align-items-center gap-2">
                         <button id="paginationPrevBtn" class="btn btn-outline-dark btn-sm rounded-3">Prev</button>
                         <div id="paginationPageCount">1/2</div>

@@ -32,11 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
     $hmiTrialDays = $_POST['hmiTrialDays'] ?? 40;
     $annualMaintenanceExpDate = $_POST['annualMaintenanceExpDate'] ?? null;
 
-    // if ($currentUser['account_type'] == '0' && (!empty($mdcPermanentCount) || !empty($dncPermanentCount) || !empty($hmiPermanentCount))) {
-    //     $mdcPermanentCount = 0;
-    //     $dncPermanentCount = 0;
-    //     $hmiPermanentCount = 0;
-    // }
+
     if (empty($codeVerifier) || empty($resellerName) || empty($resellerCode) || empty($companyName) || empty($customerName) || empty($customerEmailAddress) || empty($customerAddress) || empty($customerContactNumber)) {
         http_response_code(400);
         echo json_encode(['error' => 'Missing required fields']);
@@ -142,22 +138,8 @@ function isValidDate($date)
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
     $searchQuery = $_GET['search'] ?? '';
 
-    $dateSort = in_array($_GET['dateSort'] ?? '', ['asc', 'desc']) ? $_GET['dateSort'] : 'desc';
-    $resellerNameSort = in_array($_GET['resellerNameSort'] ?? '', ['asc', 'desc']) ? $_GET['resellerNameSort'] : 'asc';
-    $companyNameSort = in_array($_GET['companyNameSort'] ?? '', ['asc', 'desc']) ? $_GET['companyNameSort'] : 'asc';
     $selectedColumnHeader = in_array($_GET['selectedColumnHeader'] ?? '', ['reseller', 'company', 'created', 'updated']) ? $_GET['selectedColumnHeader'] : 'reseller';
     $selectedOrder = in_array($_GET['selectedOrder'] ?? '', ['asc', 'desc']) ? $_GET['selectedOrder'] : 'asc';
-
-    $dateFrom = $_GET['dateFrom'] ?? null;
-    $dateTo = $_GET['dateTo'] ?? null;
-
-    $sortByDateType = $_GET['sortByDateType'] ?? 'updatedAt';
-    $sortByDateType = in_array($sortByDateType, ['createdAt', 'updatedAt', 'none']) ? $sortByDateType : 'updatedAt';
-    $filterByDateType = $_GET['filterByDateType'] ?? 'updatedAt';
-    $filterByDateType = in_array($filterByDateType, ['createdAt', 'updatedAt']) ? $filterByDateType : 'updatedAt';
-
-    if (!isValidDate($dateFrom)) $dateFrom = null;
-    if (!isValidDate($dateTo)) $dateTo = null;
 
     $limit = 10;
     $page = isset($_GET['currentPage']) ? (int)$_GET['currentPage'] : 1;
@@ -175,7 +157,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
 
     try {
         $searchParam = '%' . $searchQuery . '%';
-        $sql = "SELECT id, user_id, code_verifier, reseller_name, reseller_code, technician, company_name, customer_name, customer_email, customer_address, customer_contact_number, mdc_permanent_count, mdc_trial_count, mdc_trial_days, dnc_permanent_count, dnc_trial_count, dnc_trial_days, hmi_permanent_count, hmi_trial_count, hmi_trial_days, license_created_at, license_updated_at 
+        $sql = "SELECT id, user_id, code_verifier, reseller_name, reseller_code, technician, 
+                company_name, customer_name, customer_email, customer_address, customer_contact_number, 
+                mdc_permanent_count, mdc_trial_count, mdc_trial_days, dnc_permanent_count, 
+                dnc_trial_count, dnc_trial_days, hmi_permanent_count, hmi_trial_count, hmi_trial_days, 
+                license_created_at, license_updated_at 
                 FROM licenses";
 
         if ($currentUser['account_type'] == '1') {
@@ -201,24 +187,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
             $types = "isssss";
         }
 
-        // if ($dateFrom && $dateTo) {
-        //     if ($filterByDateType == 'createdAt') {
-        //         $sql .= " AND DATE(license_created_at) BETWEEN ? AND ?";
-        //     } else {
-        //         $sql .= " AND DATE(license_updated_at) BETWEEN ? AND ?";
-        //     }
-        //     $params[] = $dateFrom;
-        //     $params[] = $dateTo;
-        //     $types .= "ss";
-        // }
-
-        // if ($sortByDateType == 'createdAt') {
-        //     $sql .= " ORDER BY license_created_at $dateSort, reseller_name $resellerNameSort, company_name $companyNameSort LIMIT $limit OFFSET $offset";
-        // } else if ($sortByDateType == 'updatedAt') {
-        //     $sql .= " ORDER BY license_updated_at $dateSort, reseller_name $resellerNameSort, company_name $companyNameSort LIMIT $limit OFFSET $offset";
-        // } else {
-        //     $sql .= " ORDER BY reseller_name $resellerNameSort, company_name $companyNameSort LIMIT $limit OFFSET $offset";
-        // }
 
         if ($selectedColumnHeader == "reseller") {
             $sql .= " ORDER BY reseller_name $selectedOrder LIMIT $limit OFFSET $offset";

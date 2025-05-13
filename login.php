@@ -1,15 +1,11 @@
 <?php
 session_start();
 
-if (isset($_COOKIE['remember_user'])) {
+if (isset($_COOKIE['remember_user']) || isset($_SESSION['current_user'])) {
     header('Location: ./index.php');
     exit;
 }
 
-if (isset($_SESSION['current_user'])) {
-    header('Location: ./index.php');
-    exit;
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -36,14 +32,6 @@ if (isset($_SESSION['current_user'])) {
 
                 </div>
 
-                <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false"
-                    aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNavDropdown">
-                    <ul class="navbar-nav"></ul>
-                </div> -->
             </div>
         </nav>
     </header>

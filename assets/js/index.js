@@ -119,7 +119,21 @@ const LicenseGenerator = {
                 encrypted = JSON.parse(event.target.result);
                 if (encrypted.data && encrypted.iv && encrypted.salt) {
                     this._decrypt(encrypted.data, encrypted.iv, encrypted.salt, this._secretkey).then((decryptedData) => {
+                        // NOTE: check if exist in db?
                         console.log("decryptedData: ", decryptedData);
+                        if (decryptedData.licenseId == null || decryptedData.codeVerifier == null 
+                            || decryptedData.resellerName == null || decryptedData.resellerCode == null 
+                            || decryptedData.companyName == null || decryptedData.customerName == null 
+                            || decryptedData.customerEmail == null || decryptedData.customerAddress == null
+                            || decryptedData.customerContactNumber == null 
+                            || decryptedData.mdcTrialDays == null || decryptedData.dncTrialCount == null
+                            || decryptedData.dncTrialDays == null || decryptedData.hmiTrialCount == null
+                            || decryptedData.hmiTrialDays == null || decryptedData.licenseCreatedAt == null
+                            || decryptedData.licenseUpdatedAt == null || decryptedData.mdcPermanentCount == null
+                            || decryptedData.dncPermanentCount == null || decryptedData.hmiPermanentCount == null ) {
+
+                            throw new Error("Missing file data");
+                        }
                         this._showToastMessage(null, "success");
 
                         const utypeDiv = document.getElementById("utype");
@@ -156,8 +170,8 @@ const LicenseGenerator = {
 
                         document.getElementById("fileDownloadText").textContent = "Update License File";
                     }).catch((error) => {
-                        console.log(error);
-                        this._showToastMessage(null, "error");
+                        // console.log(error);
+                        this._showToastMessage("Invalid license file format.", "error");
                     }).finally(() => {
                         encrypted = null;
                     });
@@ -268,22 +282,13 @@ const LicenseGenerator = {
         });
     },
 
-
 }
 
 
 const SearchLicense = {
     _params: {
-        dateSort: "desc",
-        resellerNameSort: "asc",
-        companyNameSort: "asc",
-        sortByDateType: "updatedAt",
         selectedColumnHeader: "reseller",
         selectedOrder: "asc",
-
-        dateFrom: "",
-        dateTo: "",
-        filterByDateType: "updatedAt",
 
         search: "",
 
@@ -292,9 +297,7 @@ const SearchLicense = {
     },
 
     init() {
-
         document.getElementById('searchModal').addEventListener('shown.bs.modal', () => {
-            // console.log("Search modal opened");
             document.getElementById("searchLicenseInput").focus();
             this.searchLicenses(this._params.search ?? '');
         });
@@ -374,129 +377,6 @@ const SearchLicense = {
         });
     },
 
-    // closeDropdown(id) {
-    //     const dropdownToggle = document.getElementById(id);
-    //     const dropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownToggle);
-    //     dropdown.hide();
-    // },
-
-    // onFilterEvent() {
-    //     let hasStartDate = false;
-    //     let hasEndDate = false;
-
-    //     const filterBtn = document.getElementById("filterBtn");
-    //     filterBtn.addEventListener("click", () => {
-    //         const filterStartDate = document.getElementById("filterStartDate").value;
-    //         const filterEndDate = document.getElementById("filterEndDate").value;
-    //         const filterByDateType = document.getElementById("filterByDateType").value;
-
-    //         this._params.dateFrom = filterStartDate;
-    //         this._params.dateTo = filterEndDate;
-    //         this._params.filterByDateType = filterByDateType;
-
-    //         this.closeDropdown('filterByDropdown');
-    //         this.searchLicenses(this._params.search ?? '');
-    //     });
-
-    //     const clearFilterBtn = document.getElementById("clearFilterBtn");
-    //     clearFilterBtn.addEventListener("click", () => {
-    //         const filterStartDate = document.getElementById("filterStartDate");
-    //         const filterEndDate = document.getElementById("filterEndDate");
-    //         const filterByDateType = document.getElementById("filterByDateType");
-    //         hasStartDate = false;
-    //         hasEndDate = false;
-    //         filterStartDate.value = "";
-    //         filterEndDate.value = "";
-    //         filterByDateType.value = "updatedAt";
-
-    //         this._params.filterByDateType = "updatedAt";
-    //         this._params.dateFrom = "";
-    //         this._params.dateTo = "";
-
-    //         this.closeDropdown('filterByDropdown');
-    //         this.searchLicenses(this._params.search ?? '');
-    //     });
-
-    //     const filterStartDate = document.getElementById("filterStartDate");
-    //     filterStartDate.addEventListener("change", (e) => {
-    //         const filterEndDate = document.getElementById("filterEndDate");
-    //         filterEndDate.min = e.target.value;
-
-    //         if (filterEndDate.value < e.target.value) {
-    //             filterEndDate.value = e.target.value;
-    //         }
-    //         hasStartDate = true;
-    //         hasEndDate = true;
-
-    //         const filterBtn = document.getElementById("filterBtn");
-    //         if (hasStartDate && hasEndDate) {
-    //             filterBtn.removeAttribute("disabled");
-    //         } else {
-    //             filterBtn.setAttribute("disabled", "true");
-    //         }
-    //     });
-
-
-    //     const filterEndDate = document.getElementById("filterEndDate");
-    //     filterEndDate.addEventListener("change", (e) => {
-    //         hasEndDate = true;
-
-    //         const filterBtn = document.getElementById("filterBtn");
-    //         if (hasStartDate && hasEndDate) {
-    //             filterBtn.removeAttribute("disabled");
-    //         } else {
-    //             filterBtn.setAttribute("disabled", "true");
-    //         }
-    //     })
-
-    //     document.getElementById('filterByDropdown').addEventListener('show.bs.dropdown', () => {
-
-    //         const filterBtn = document.getElementById("filterBtn");
-    //         if (hasStartDate && hasEndDate) {
-    //             filterBtn.removeAttribute("disabled");
-    //         } else {
-    //             filterBtn.setAttribute("disabled", "true");
-    //         }
-    //     });
-
-    // },
-
-    // onSortOrderEvent() {
-    //     const searchBtn = document.getElementById("sortByBtn");
-    //     searchBtn.addEventListener("click", () => {
-    //         const dateSort = document.querySelector('input[name="dateSort"]:checked').value;
-    //         const resellerNameSort = document.querySelector('input[name="resellerNameSort"]:checked').value;
-    //         const companyNameSort = document.querySelector('input[name="companyNameSort"]:checked').value;
-    //         const sortByDateType = document.getElementById("sortByDateType").value;
-
-    //         this._params.dateSort = dateSort;
-    //         this._params.resellerNameSort = resellerNameSort;
-    //         this._params.companyNameSort = companyNameSort;
-    //         this._params.sortByDateType = sortByDateType;
-
-    //         this.searchLicenses(this._params.search ?? '');
-    //         this.closeDropdown('sortByDropdown');
-    //     });
-
-    //     const clearSearchBtn = document.getElementById("clearSortByBtn");
-    //     clearSearchBtn.addEventListener("click", () => {
-    //         this._params.dateSort = "desc";
-    //         this._params.resellerNameSort = "asc";
-    //         this._params.companyNameSort = "asc";
-    //         this._params.sortByDateType = "updatedAt";
-
-    //         const dateDesc = document.getElementById("dateDescending");
-    //         const resellerNameAscending = document.getElementById("resellerNameAscending");
-    //         const companyNameAscending = document.getElementById("companyNameAscending");
-    //         const sortByDateType = document.getElementById("sortByDateType");
-    //         dateDesc.checked = true;
-    //         resellerNameAscending.checked = true;
-    //         companyNameAscending.checked = true;
-    //         sortByDateType.value = "updatedAt";
-    //         this.searchLicenses(this._params.search ?? '');
-    //         this.closeDropdown('sortByDropdown');
-    //     })
-    // },
 
     onSearchLicenseEvent() {
         const searchInput = document.getElementById("searchLicenseInput");
@@ -550,8 +430,10 @@ const SearchLicense = {
                 const tableBody = document.getElementById("searchResultsTableBody");
                 tableBody.innerHTML = "";
                 if (data.result.length === 0) {
+                    document.getElementById("noLicenseMessage").hidden = false;
                     return;
                 }
+                document.getElementById("noLicenseMessage").hidden = true;
 
                 data.result.forEach(item => {
                     const row = document.createElement("tr");
@@ -626,21 +508,5 @@ const SearchLicense = {
     }
 }
 
-// const IndexEvents = {
-//     init() {
-//         this.onDropdownEvent();
-//     },
-
-//     onDropdownEvent() {
-//         document.querySelectorAll('.dropdown-menu').forEach(menu => {
-//             menu.addEventListener('click', function (e) {
-//                 e.stopPropagation();
-//             });
-//         });
-//     }
-
-// }
-
-// IndexEvents.init();
 SearchLicense.init();
 LicenseGenerator.init();
