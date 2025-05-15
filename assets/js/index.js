@@ -31,14 +31,14 @@ const LicenseGenerator = {
                 method: "POST",
                 body: formData,
             })
-                .then((response) => {
-                    if (!response.ok) {
-                        return response.json().then(err => {
-                            throw new Error(err.error || 'Unknown error');
-                        });
-                    }
-                    return response.json();
-                })
+            .then((response) => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.message || 'Unknown error');
+                    });
+                }
+                return response.json();
+            })
                 .then((result) => {
                     // NOTE: PREFER BACKEND ENCRYPTION / DECRYPTION
                     console.log("License file saved successfully:", result);
@@ -118,27 +118,44 @@ const LicenseGenerator = {
             reader.onload = (event) => {
                 encrypted = JSON.parse(event.target.result);
                 if (encrypted.data && encrypted.iv && encrypted.salt) {
-                    this._decrypt(encrypted.data, encrypted.iv, encrypted.salt, this._secretkey).then((decryptedData) => {
+                    this._decrypt(encrypted.data, encrypted.iv, encrypted.salt, this._secretkey).then(async (decryptedData) => {
                         // NOTE: check if exist in db?
                         console.log("decryptedData: ", decryptedData);
-                        if (decryptedData.licenseId == null || decryptedData.codeVerifier == null 
-                            || decryptedData.resellerName == null || decryptedData.resellerCode == null 
-                            || decryptedData.companyName == null || decryptedData.customerName == null 
+                        if (decryptedData.licenseId == null || decryptedData.codeVerifier == null
+                            || decryptedData.resellerFirstname == null || decryptedData.resellerLastname == null
+                            || decryptedData.resellerCode == null
+                            || decryptedData.companyName == null 
+                            || decryptedData.customerFirstname == null || decryptedData.customerLastname == null
                             || decryptedData.customerEmail == null || decryptedData.customerAddress == null
-                            || decryptedData.customerContactNumber == null 
+                            || decryptedData.customerContactNumber == null
                             || decryptedData.mdcTrialDays == null || decryptedData.dncTrialCount == null
                             || decryptedData.dncTrialDays == null || decryptedData.hmiTrialCount == null
                             || decryptedData.hmiTrialDays == null || decryptedData.licenseCreatedAt == null
                             || decryptedData.licenseUpdatedAt == null || decryptedData.mdcPermanentCount == null
-                            || decryptedData.dncPermanentCount == null || decryptedData.hmiPermanentCount == null ) {
+                            || decryptedData.dncPermanentCount == null || decryptedData.hmiPermanentCount == null) {
 
                             throw new Error("Missing file data");
                         }
+
+                        try {
+                            const params = new URLSearchParams({ id: decryptedData.licenseId }).toString();
+                            const resp = await fetch(`./licenses/license.php?${params}`)
+                            const result = await resp.json();
+                            if (result.error) throw new Error(result.error)
+                            
+                            document.getElementById("userId").value = result.userId;
+                            
+                        } catch (err) {
+                            this._showToastMessage(err.message, "error")
+                            return;
+                        }
+
+
                         this._showToastMessage(null, "success");
 
                         const utypeDiv = document.getElementById("utype");
                         const utype = utypeDiv.getAttribute('data-utype');
-                        if (decryptedData['mdcPermanentCount'] != 0 || decryptedData['dncPermanentCount'] != 0 || decryptedData['hmiPermanentCount'] != 0) {
+                        if ((decryptedData['mdcPermanentCount'] != 0 || decryptedData['dncPermanentCount'] != 0 || decryptedData['hmiPermanentCount'] != 0) || utype == "1") {
                             const mdcPermanentCount = document.getElementById('mdcPermanentCount');
                             const dncPermanentCount = document.getElementById('dncPermanentCount');
                             const hmiPermanentCount = document.getElementById('hmiPermanentCount');
@@ -170,7 +187,7 @@ const LicenseGenerator = {
 
                         document.getElementById("fileDownloadText").textContent = "Update License File";
                     }).catch((error) => {
-                        // console.log(error);
+                        console.log(error);
                         this._showToastMessage("Invalid license file format.", "error");
                     }).finally(() => {
                         encrypted = null;
@@ -455,7 +472,7 @@ const SearchLicense = {
                     const licenseUpdatedAt = new Date(item['license_updated_at'].replace(' ', 'T')).toLocaleString('en-US', dateFormat);
 
                     row.innerHTML = `
-                        <td class="${currentLicenseUserId == item['user_id'] ? 'fw-medium' : ''}"><small>${item['reseller_name'].toUpperCase()}</small></td>
+                        <td class="${currentLicenseUserId == item['user_id'] ? 'fw-medium' : ''}"><small>${item['reseller_first_name'] + " " + item['reseller_last_name']}</small></td>
                         <td><small>${item['company_name'].toUpperCase()}</small></td>
                         <td><small>${licenseCreatedAt}</small></td>
                         <td><small>${licenseUpdatedAt}</small></td>
@@ -488,6 +505,7 @@ const SearchLicense = {
 
                         for (const [key, value] of Object.entries(item)) {
                             let camelCaseKey = snakeToCamel(key);
+                            // console.log(camelCaseKey);
                             // if (camelCaseKey == "userId") continue;
                             if (camelCaseKey == "id") camelCaseKey = "licenseId";
 
@@ -508,5 +526,80 @@ const SearchLicense = {
     }
 }
 
+const UserProfile = {
+    init() {
+        this.onUserProfileModalEvent();
+    },
+
+    onUserProfileModalEvent() {
+        const dateFormat = {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        };
+        document.getElementById('profileModal').addEventListener('shown.bs.modal', async () => {
+            try {
+                const resp = await fetch("./accounts/user.php");
+                const result = await resp.json();
+
+                // console.log("USER: ", result);
+                const profileModalBody = document.getElementById("profileModalBody");
+                const user = result.user;
+                let resellerInfo = "";
+                let badgeElement = "";
+                if (user.accountType == "0") {
+                    badgeElement = "<span class='badge text-bg-success'>Reseller</span>";
+                    resellerInfo = `
+                    <div class="row">
+                     <div class="col-4 text-secondary">Reseller</div>
+                     <div class="col-6">${user['firstName']} ${user['lastName']}</div>
+                    </div>
+                    <div class="row">
+                     <div class="col-4 text-secondary">Company</div>
+                     <div class="col-6">${user['companyName']}</div>
+                    </div>
+                    <div class="row">
+                     <div class="col-4 text-secondary">Mobile number</div>
+                     <div class="col-6">${user['mobileNumber']}</div>
+                    </div>
+                    <div class="row">
+                     <div class="col-4 text-secondary">Reseller code</div>
+                     <div class="col-6">${user['resellerCode']}</div>
+                    </div>
+                    `;
+                } else {
+                    badgeElement = "<span class='badge text-bg-primary'>Admin</span>";
+                }
+
+                const joinedDate = new Date(user['createdAt'].replace(' ', 'T')).toLocaleString('en-US', dateFormat);
+
+
+                profileModalBody.innerHTML = `
+            <div class="row">
+                <div class="col-4 text-secondary">Account</div>
+                <div class="col-6">${badgeElement}</div>
+            </div>
+            <div class="row">
+                <div class="col-4 text-secondary">Email</div>
+                <div class="col-6">${user.email}</div>
+            </div>
+            <div class="row">
+                <div class="col-4 text-secondary">Joined</div>
+                <div class="col-6">${joinedDate}</div>
+            </div>
+            ${user.accountType == "0" ? resellerInfo : ""}
+            `;
+            } catch (err) {
+                console.log("ERROR: ", err.message);
+            }
+        });
+
+    }
+
+}
+
+UserProfile.init();
 SearchLicense.init();
 LicenseGenerator.init();

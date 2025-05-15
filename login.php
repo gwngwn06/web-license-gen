@@ -41,7 +41,7 @@ if (isset($_COOKIE['remember_user']) || isset($_SESSION['current_user'])) {
         <div class="text-center mb-3">Don't have an account? <a class="fw-bold" href="./register.php">Sign up</a> for an account now.</div>
         <form class="mx-5" method="post" action="">
             <div class="mb-2">
-                <input name="email" type="email" class="form-control  rounded-3 border-2" id="email" placeholder="Email" required>
+                <input name="username" type="text" class="form-control  rounded-3 border-2" id="username" placeholder="Username" required>
             </div>
             <div class="mb-1">
                 <input name="password" type="password" class="form-control rounded-3 border-2" id="password" placeholder="Password" required>

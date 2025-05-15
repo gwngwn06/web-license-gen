@@ -2,12 +2,70 @@
 ob_start();
 session_start();
 
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 if (isset($_COOKIE['remember_user']) || isset($_SESSION['current_user'])) {
     header('Location: ./index.php');
     exit;
 }
-
 ?>
+
+<?php
+require "./accounts/account.php";
+
+$account = new Account();
+$errorMessage = "";
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (
+        !isset($_POST['csrf_token'], $_SESSION['csrf_token']) ||
+        !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])
+    ) {
+        die("CSRF token validation failed.");
+    }
+
+    $account->initRegistrationFields();
+    $response = $account->isValidRegistration();
+
+
+    if ($response['status'] === 'error') {
+        $errorMessage = $response['message'];
+        // echo "<script>
+        // const formError = document.getElementById('formError');
+        // if (formError) {
+        //     formError.textContent = '{$response['message']}';
+        // }
+        // console.log('{$response['message']}');
+        // </script>";
+        // exit;
+    } else {
+        $user = $account->registerNewUser();
+        if ($user['status'] === "success") {
+            unset($_SESSION['csrf_token']);
+
+            $_SESSION['toast'] = [
+                'status' => 'success',
+                'header' => 'Registration Successful',
+                'message' => 'Account created successfully! Please log in.'
+            ];
+            header("Location: ./login.php");
+            exit;
+        } else {
+            $errorMessage = $user['message'];
+            // echo "<script>
+            // const formError = document.getElementById('formError');
+            // if (formError) {
+            //     formError.textContent = '{$user['message']}';
+            // }
+            // console.log('{$user['message']}');
+            // </script>";
+        }
+    }
+}
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -41,20 +99,21 @@ if (isset($_COOKIE['remember_user']) || isset($_SESSION['current_user'])) {
         <div class="fw-medium fs-2 text-center" style="color: #0071BC">Register for an account</div>
         <div class="text-center mb-3">Already registered? <a class="fw-bold" href="./login.php">Login</a> to your account now.</div>
 
-        <form class="mx-3" method="post" action="">
+        <form class="mx-3 mx-md-5" method="post" action="">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
             <div class="fw-medium mb-1">User Info</div>
             <div class="mb-2">
                 <!-- <label for="username" class="form-label"><span class="text-danger">*</span>User name</label> -->
-                <input name="username" type="text" class="form-control rounded-3 border-2" id="username" placeholder="Username" required>
+                <input name="username" type="text" class="form-control rounded-3 border-2" value="<?= htmlspecialchars($account->username ?? '') ?>" id="username" placeholder="Username" required>
             </div>
             <div class="mb-2">
-                <input name="email" type="email" class="form-control rounded-3 border-2" id="email" placeholder="Email" required>
+                <input name="email" type="email" class="form-control rounded-3 border-2" value="<?= htmlspecialchars($account->email ?? '') ?>" id="email" placeholder="Email" required>
             </div>
             <div class="mb-2">
-                <input name="password" type="password" class="form-control rounded-3 border-2" id="password" placeholder="Password" required>
+                <input name="password" type="password" class="form-control rounded-3 border-2" value="<?= htmlspecialchars($account->password ?? '') ?>" id="password" placeholder="Password" required>
             </div>
             <div class="mb-2">
-                <input name="confirmPassword" type="password" class="form-control rounded-3 border-2" id="confirmPassword" placeholder="Confirm password" required>
+                <input name="confirmPassword" type="password" class="form-control rounded-3 border-2" value="<?= htmlspecialchars($account->confirmPassword ?? '') ?>" id="confirmPassword" placeholder="Confirm password" required>
             </div>
 
             <div class="fw-medium mb-1">Account Type</div>
@@ -67,23 +126,30 @@ if (isset($_COOKIE['remember_user']) || isset($_SESSION['current_user'])) {
                 <div class="fw-medium mb-1">Reseller Information</div>
                 <div class="row">
                     <div class="mb-2 col">
-                        <input name="resellerName" type="text" class="form-control rounded-3 border-2" placeholder="Name" required>
+                        <input name="resellerFirstname" type="text" class="form-control rounded-3 border-2" value="<?= htmlspecialchars($account->resellerFirstname ?? '') ?>" placeholder="First name" required>
                     </div>
                     <div class="mb-2 col">
-                        <input name="mobileNumber" type="text" class="form-control rounded-3 border-2" placeholder="Mobile/Phone Number" required>
+                        <input name="resellerLastname" type="text" class="form-control rounded-3 border-2" value="<?= htmlspecialchars($account->resellerLastname ?? '') ?>" placeholder="Last name" required>
                     </div>
                 </div>
                 <div class="row">
                     <div class="mb-2 col">
-                        <input name="companyName" type="text" class="form-control rounded-3 border-2" placeholder="Company Name" required>
+                        <input name="companyName" type="text" class="form-control rounded-3 border-2" value="<?= htmlspecialchars($account->companyName ?? '') ?>" placeholder="Company Name" required>
                     </div>
                     <div class="mb-2 col">
-                        <input name="resellerCode" type="text" class="form-control rounded-3 border-2" placeholder="Reseller Code" required>
+                        <input name="resellerCode" type="text" class="form-control rounded-3 border-2" value="<?= htmlspecialchars($account->resellerCode ?? '') ?>" placeholder="Reseller Code" required>
+                    </div>
+                </div>
+                <div>
+                    <div class="mb-2 col">
+                        <input name="mobileNumber" type="text" class="form-control rounded-3 border-2" value="<?= htmlspecialchars($account->mobileNumber ?? '') ?>" placeholder="Mobile/Phone Number" required>
                     </div>
                 </div>
             </div>
-            <div id="formError" class="text-danger"></div>
-            <div class="text-end">
+            <div id="formError" class="text-danger">
+                <?= htmlspecialchars($errorMessage) ?>
+            </div>
+            <div class="text-end mt-3">
                 <button type="submit" class="btn btn-primary">Register</button>
             </div>
         </form>
@@ -91,47 +157,7 @@ if (isset($_COOKIE['remember_user']) || isset($_SESSION['current_user'])) {
 
 </body>
 
-<?php
-require "./accounts/account.php";
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $account = new Account();
-    $account->initRegistrationFields();
-    $response = $account->isValidRegistration();
-
-
-    if ($response['status'] === 'error') {
-        echo "<script>
-        const formError = document.getElementById('formError');
-        if (formError) {
-            formError.textContent = '{$response['message']}';
-        }
-        console.log('{$response['message']}');
-        </script>";
-        // exit;
-    } else {
-        $user = $account->registerNewUser();
-        if ($user['status'] === "success") {
-
-            $_SESSION['toast'] = [
-                'status' => 'success',
-                'header' => 'Registration Successful',
-                'message' => 'Account created successfully! Please log in.'
-            ];
-            header("Location: ./login.php");
-            exit;
-        } else {
-            echo "<script>
-            const formError = document.getElementById('formError');
-            if (formError) {
-                formError.textContent = '{$user['message']}';
-            }
-            console.log('{$user['message']}');
-            </script>";
-        }
-    }
-}
-?>
 
 <script src="./assets/vendor/bootstrap-5.3.5-dist/js/bootstrap.bundle.min.js"></script>
 <script type="module">

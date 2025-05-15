@@ -50,8 +50,7 @@ if (!isset($_SESSION['current_user'])) {
 
                 </div>
 
-                <div class="d-flex flex-row-reverse align-items-center">
-                    <a href="./accounts/logout.php" class="btn btn-outline-danger rounded-3 me-2 btn-sm">Logout</a>
+                <div class="d-flex flex-row align-items-center">
                     <?php
                     $user = $_SESSION['current_user'];
                     $username = strtoupper($user['username']);
@@ -60,8 +59,52 @@ if (!isset($_SESSION['current_user'])) {
                     } else {
                         $badgeElement = "<span class='badge text-bg-primary'>Admin</span>";
                     }
-                    echo "<div class='text-secondary me-3 text-center fw-medium'> $badgeElement Welcome back, $username</div>";
+                    echo "<div class='text-secondary me-3 text-center fw-medium'> $badgeElement </div>";
                     ?>
+                    <div class="dropdown-center">
+                        <button class="dropdown-toggle d-flex align-items-center" type="button" style="all: unset;" data-bs-toggle="dropdown" aria-expanded="false">
+
+                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold"
+                                style="width: 40px; height: 40px;">
+                                <?php
+                                $user = strtoupper($_SESSION['current_user']['username'])[0];
+                                echo "$user";
+                                ?>
+                            </div>
+                            <div class="ms-2 text-start">
+                                <?php
+                                $user = $_SESSION['current_user'];
+                                $username = strtoupper($user['username']);
+                                $email = $user['email'];
+                                echo "
+                                <div class='fw-medium d-flex'>
+                                    $username
+                                </div>
+                                <div class='text-secondary text-truncate' style='width: 125px;'>$email</div>";
+                                ?>
+                            </div>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#profileModal" href="#">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person" viewBox="0 0 16 16">
+                                        <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z" />
+                                    </svg>
+                                    Profile
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="./accounts/logout.php">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-right" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z" />
+                                        <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z" />
+                                    </svg>
+                                    Sign out
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- <a href="./accounts/logout.php" class="btn btn-outline-danger rounded-3 me-2 btn-sm">Logout</a> -->
                 </div>
             </div>
         </nav>
@@ -101,7 +144,7 @@ if (!isset($_SESSION['current_user'])) {
         <form id="generateLicenseForm">
             <?php
             $userId = $_SESSION['current_user']['id'];
-            echo "<input type='hidden' name='userId' value='$userId'>
+            echo "<input id='userId' type='hidden' name='userId' value='$userId'>
                   <input id='licenseId' type='hidden' name='licenseId' value=''>";
             ?>
             <div class="">
@@ -117,13 +160,23 @@ if (!isset($_SESSION['current_user'])) {
             <div class="fw-medium fs-5 mt-4 mb-2">Reseller's Information</div>
             <div class="row">
                 <div class="mb-2 col">
-                    <label for="resellerName" class="form-label text-secondary fw-medium"><span
-                            class="text-danger">*</span>Reseller Name</label>
+                    <label for="resellerFirstName" class="form-label text-secondary fw-medium"><span
+                            class="text-danger">*</span>First name</label>
                     <div class="">
-                        <input name="resellerName" type="text" class="form-control rounded-3 border-2" id="resellerName"
+                        <input name="resellerFirstName" type="text" class="form-control rounded-3 border-2" id="resellerFirstName"
                             required>
                     </div>
                 </div>
+                <div class="mb-2 col">
+                    <label for="resellerLastName" class="form-label text-secondary fw-medium"><span
+                            class="text-danger">*</span>Last name</label>
+                    <div class="">
+                        <input name="resellerLastName" type="text" class="form-control rounded-3 border-2" id="resellerLastName"
+                            required>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
                 <div class="mb-2 col">
                     <label for="resellerCode" class="form-label text-secondary fw-medium">
                         <span class="text-danger">*</span>Reseller Code</label>
@@ -132,8 +185,6 @@ if (!isset($_SESSION['current_user'])) {
                             required>
                     </div>
                 </div>
-            </div>
-            <div class="row">
                 <div class="col mb-2">
                     <label for="technician" class="form-label text-secondary fw-medium">Technician</label>
                     <div class="">
@@ -147,32 +198,40 @@ if (!isset($_SESSION['current_user'])) {
 
 
             <div class="fw-medium fs-5 mt-4 mb-2">Customer Information</div>
-            <div class="mb-2">
-                <label for="companyName" class="form-label text-secondary fw-medium">
-                    <span class="text-danger">*</span>
-                    Company Name</label>
-                <input id="companyName" name="companyName" type="text" class="form-control rounded-3 border-2" required>
+            <div class="row mb-2">
+                <div class="col">
+                    <label for="customerFirstName" class="form-label text-secondary fw-medium">
+                        <span class="text-danger">*</span>
+                        First name</label>
+                    <input name="customerFirstName" type="text" class="form-control rounded-3 border-2" required>
+                </div>
+                <div class="col">
+                    <label for="customerLastName" class="form-label text-secondary fw-medium">
+                        <span class="text-danger">*</span>
+                        Last name</label>
+                    <input name="customerLastName" type="text" class="form-control rounded-3 border-2" required>
+                </div>
             </div>
             <div class="row mb-2">
                 <div class="col">
-                    <label for="customerName" class="form-label text-secondary fw-medium">
+                    <label for="companyName" class="form-label text-secondary fw-medium">
                         <span class="text-danger">*</span>
-                        Name</label>
-                    <input name="customerName" type="text" class="form-control rounded-3 border-2" required>
+                        Company Name</label>
+                    <input id="companyName" name="companyName" type="text" class="form-control rounded-3 border-2" required>
                 </div>
-                <div class="col">
-                    <label for="customerEmail" class="form-label text-secondary fw-medium">
-                        <span class="text-danger">*</span>
-                        Email Address</label>
-                    <input name="customerEmail" type="email" class="form-control rounded-3 border-2" required>
-                </div>
-            </div>
-            <div class="row">
                 <div class="col">
                     <label for="customerAddress" class="form-label text-secondary fw-medium">
                         <span class="text-danger">*</span>
                         Address</label>
                     <input name="customerAddress" type="text" class="form-control rounded-3 border-2" required>
+                </div>
+            </div>
+            <div class="row mb-2">
+                <div class="col">
+                    <label for="customerEmail" class="form-label text-secondary fw-medium">
+                        <span class="text-danger">*</span>
+                        Email Address</label>
+                    <input name="customerEmail" type="email" class="form-control rounded-3 border-2" required>
                 </div>
                 <div class="col">
                     <label for="customerContactNumber" class="form-label text-secondary fw-medium">
@@ -181,9 +240,7 @@ if (!isset($_SESSION['current_user'])) {
                     <input name="customerContactNumber" type="text" class="form-control rounded-3 border-2" required>
                 </div>
             </div>
-
-
-            <div class="mt-3 mb-3"
+            <div class="my-3"
                 style="border-bottom: 1px dashed var(--bs-secondary); border-width: 3px;  opacity: 0.1;">
             </div>
             <div class="fw-medium fs-5 mt-4 mb-2">Machine License</div>
@@ -318,6 +375,46 @@ if (!isset($_SESSION['current_user'])) {
                         <div id="paginationPageCount">1/2</div>
                         <button id="paginationNextBtn" class="btn btn-outline-dark btn-sm rounded-3">Next</button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold"
+                                style="width: 40px; height: 40px;">
+                                <?php
+                                $user = strtoupper($_SESSION['current_user']['username'])[0];
+                                echo "$user";
+                                ?>
+                            </div>
+                            <div class="ms-2 text-start">
+                                <?php
+                                $user = $_SESSION['current_user'];
+                                $username = strtoupper($user['username']);
+                                $email = $user['email'];
+                                echo "
+                                <div class='fw-medium '>
+                                    $username
+                                </div>";
+                                ?>
+                            </div>
+                        </div>
+                    </h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div id="profileModalBody" class="modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
                 </div>
             </div>
         </div>
