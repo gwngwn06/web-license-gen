@@ -1,3 +1,7 @@
+const GlobalParams = {
+    resellerId: -1,
+}
+
 const LicenseGenerator = {
     _enc: new TextEncoder(),
     _secretkey: "mySecretKey",
@@ -31,14 +35,14 @@ const LicenseGenerator = {
                 method: "POST",
                 body: formData,
             })
-            .then((response) => {
-                if (!response.ok) {
-                    return response.json().then(err => {
-                        throw new Error(err.message || 'Unknown error');
-                    });
-                }
-                return response.json();
-            })
+                .then((response) => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(err.message || 'Unknown error');
+                        });
+                    }
+                    return response.json();
+                })
                 .then((result) => {
                     // NOTE: PREFER BACKEND ENCRYPTION / DECRYPTION
                     console.log("License file saved successfully:", result);
@@ -99,7 +103,6 @@ const LicenseGenerator = {
                 });
 
         })
-
     },
 
     onLicenseUploadEvent() {
@@ -119,21 +122,22 @@ const LicenseGenerator = {
                 encrypted = JSON.parse(event.target.result);
                 if (encrypted.data && encrypted.iv && encrypted.salt) {
                     this._decrypt(encrypted.data, encrypted.iv, encrypted.salt, this._secretkey).then(async (decryptedData) => {
-                        // NOTE: check if exist in db?
                         console.log("decryptedData: ", decryptedData);
-                        if (decryptedData.licenseId == null || decryptedData.codeVerifier == null
-                            || decryptedData.resellerFirstname == null || decryptedData.resellerLastname == null
+                        if (
+                            decryptedData.licenseId == null || decryptedData.codeVerifier == null
+                            || decryptedData.resellerFirstName == null || decryptedData.resellerLastName == null
                             || decryptedData.resellerCode == null
-                            || decryptedData.companyName == null 
-                            || decryptedData.customerFirstname == null || decryptedData.customerLastname == null
+                            || decryptedData.companyName == null
+                            || decryptedData.customerFirstName == null || decryptedData.customerLastName == null
                             || decryptedData.customerEmail == null || decryptedData.customerAddress == null
                             || decryptedData.customerContactNumber == null
                             || decryptedData.mdcTrialDays == null || decryptedData.dncTrialCount == null
+                            || decryptedData.mdcTrialCount == null
                             || decryptedData.dncTrialDays == null || decryptedData.hmiTrialCount == null
                             || decryptedData.hmiTrialDays == null || decryptedData.licenseCreatedAt == null
                             || decryptedData.licenseUpdatedAt == null || decryptedData.mdcPermanentCount == null
-                            || decryptedData.dncPermanentCount == null || decryptedData.hmiPermanentCount == null) {
-
+                            || decryptedData.dncPermanentCount == null || decryptedData.hmiPermanentCount == null
+                        ) {
                             throw new Error("Missing file data");
                         }
 
@@ -142,9 +146,9 @@ const LicenseGenerator = {
                             const resp = await fetch(`./licenses/license.php?${params}`)
                             const result = await resp.json();
                             if (result.error) throw new Error(result.error)
-                            
+
                             document.getElementById("userId").value = result.userId;
-                            
+
                         } catch (err) {
                             this._showToastMessage(err.message, "error")
                             return;
@@ -298,7 +302,6 @@ const LicenseGenerator = {
             });
         });
     },
-
 }
 
 
@@ -516,6 +519,7 @@ const SearchLicense = {
                                 document.getElementById("fileDownloadText").textContent = "Update License File";
                             }
                         }
+                        GlobalParams.resellerId = item.reseller_id;
                     });
                     tableBody.appendChild(row);
                 });
@@ -525,6 +529,8 @@ const SearchLicense = {
             });
     }
 }
+
+
 
 const UserProfile = {
     init() {
@@ -597,9 +603,115 @@ const UserProfile = {
         });
 
     }
-
 }
 
+
+
+const SearchInputDropdown = {
+    _searchList: [],
+
+    init() {
+        this.onInputSearchEvent();
+    },
+
+    async searchResellers(query, dataSearch, dropdown) {
+        console.log(GlobalParams.resellerId);
+        try {
+            const params = new URLSearchParams({ action: "searchDropdown", query, dataSearch, resellerId: GlobalParams.resellerId }).toString();
+            const resp = await fetch(`./licenses/license.php?${params}`);
+            const result = await resp.json();
+            console.log(result);
+            if (!result.success || !result.result) return;
+
+            this._searchList = result.result;
+            dropdown.innerHTML = "";
+
+            for (const [index, data] of result.result.entries()) {
+                const li = document.createElement("li");
+                li.setAttribute("data-idx", index);
+                li.textContent = `${data.first_name} ${data.last_name}`;
+                dropdown.appendChild(li);
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    },
+
+    onInputSearchEvent() {
+        const searchData = (query, dataSearch, dropdown) => {
+            console.log("search: ", query);
+            this.searchResellers(query, dataSearch, dropdown);
+        }
+        const debounce = (callback, waitTime) => {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    callback(...args);
+                }, waitTime);
+            };
+        }
+        const debounceHandler = debounce(searchData, 500);
+
+
+
+        document.querySelectorAll(".select-button").forEach(input => {
+            const dropdownUL = input.nextElementSibling;
+
+            input.addEventListener('input', (e) => {
+                const isDropdownHidden = dropdownUL.classList.contains("hidden");
+                if (isDropdownHidden) toggleDropdown(true, dropdownUL); // Open dropdown if it's closed
+
+                const searchTerm = e.target.value;
+                const dataSearch = input.getAttribute("data-search");
+                debounceHandler(searchTerm, dataSearch, dropdownUL)
+            })
+
+            // displaying and selecting option event
+            dropdownUL.addEventListener("click", (e) => {
+                if (e.target && e.target.matches("li")) {
+                    const index = parseInt(e.target.getAttribute('data-idx'));
+                    if (isNaN(index)) return;
+                    const dataSearch = input.getAttribute("data-search");
+                    if (dataSearch == "resellers") {
+                        const data = this._searchList[index];
+                        document.getElementById("resellerFirstName").value = data.first_name;
+                        document.getElementById("resellerLastName").value = data.last_name;
+                        document.getElementById("resellerCode").value = data.reseller_code;
+                        document.getElementById("technician").value = data.technician;
+                        // this._selectedResellerId = data.id;
+                        GlobalParams.resellerId = data.id;
+                    } else if (dataSearch == "customers") {
+                        const data = this._searchList[index];
+                        // console.log("customers", data);
+                        document.getElementById("customerFirstName").value = data.first_name;
+                        document.getElementById("customerLastName").value = data.last_name;
+                        document.getElementById("companyName").value = data.company_name;
+                        document.getElementById("customerAddress").value = data.address;
+                        document.getElementById("customerEmail").value = data.email;
+                        document.getElementById("customerContactNumber").value = data.contact_number;
+                    }
+                }
+            });
+
+            input.addEventListener("click", () => toggleDropdown());
+            document.addEventListener("click", (e) => {
+                if (dropdownUL.classList.contains("hidden")) return;
+                if (input.contains(e.target)) return;
+                toggleDropdown(false); // when clicked outside
+            });
+
+            const toggleDropdown = (expand = null) => {
+                const isOpen =
+                    expand !== null ? expand : dropdownUL.classList.contains("hidden");
+                dropdownUL.classList.toggle("hidden", !isOpen);
+                input.setAttribute("aria-expanded", isOpen);
+            };
+        });
+    }
+}
+
+SearchInputDropdown.init();
 UserProfile.init();
 SearchLicense.init();
 LicenseGenerator.init();

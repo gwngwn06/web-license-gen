@@ -42,7 +42,7 @@ if (!isset($_SESSION['current_user'])) {
                 <div class="d-flex align-items-center">
                     <img id="backToHomePage" src="./assets/icons/nexas-america.png" width="110" height="55" />
                     <div class="navbar-brand d-flex flex-column">
-                        <div class="text-secondary text-end fw-medium ms-3">
+                        <div class="text-end fw-medium ms-3" style="color: #0071BC">
                             Web License Generator
                             <!-- <sup style="font-size: 9px; vertical-align: super">2025</sup> -->
                         </div>
@@ -53,7 +53,7 @@ if (!isset($_SESSION['current_user'])) {
                 <div class="d-flex flex-row align-items-center">
                     <?php
                     $user = $_SESSION['current_user'];
-                    $username = strtoupper($user['username']);
+                    // $username = strtoupper($user['username']);
                     if ($user['account_type'] == 0) {
                         $badgeElement = "<span class='badge text-bg-success'>Reseller</span>";
                     } else {
@@ -64,7 +64,7 @@ if (!isset($_SESSION['current_user'])) {
                     <div class="dropdown-center">
                         <button class="dropdown-toggle d-flex align-items-center" type="button" style="all: unset;" data-bs-toggle="dropdown" aria-expanded="false">
 
-                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold"
+                            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold"
                                 style="width: 40px; height: 40px;">
                                 <?php
                                 $user = strtoupper($_SESSION['current_user']['username'])[0];
@@ -74,7 +74,7 @@ if (!isset($_SESSION['current_user'])) {
                             <div class="ms-2 text-start">
                                 <?php
                                 $user = $_SESSION['current_user'];
-                                $username = strtoupper($user['username']);
+                                $username = ($user['username']);
                                 $email = $user['email'];
                                 echo "
                                 <div class='fw-medium d-flex'>
@@ -114,17 +114,17 @@ if (!isset($_SESSION['current_user'])) {
         <svg style="left: 16px; top: 50%; transform: translateY(-50%);" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search position-absolute" viewBox="0 0 16 16">
             <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
         </svg>
-        <input type="text" id="searchInput" class="form-control rounded-4 shadow-sm border ps-5 mx-1 my-2 my-md-3" placeholder="Search for licenses...">
+        <input type="text" id="searchInput" class="form-control rounded-3 border-2 ps-5 p-2 mx-1 my-2 my-md-3" style="background-color: #F6F6F6" placeholder="Search for a license...">
     </div>
-    <main class="mx-auto mb-5 bg-white border rounded-4 p-4 col-md-8 col-lg-7 col-sm-11 shadow-sm">
+    <main class="mx-auto mb-5 bg-white border rounded-4 p-5 col-md-8 col-lg-7 col-sm-11 shadow-sm">
         <div class="d-flex justify-content-between align-items-center mb-3 position-relative">
             <div class="d-none d-md-block" style="visibility: hidden;">
             </div>
-            <div class="fw-medium fs-2 text-primary d-block d-md-none">
+            <div class="fw-medium fs-2 d-block d-md-none" style="color: #0071BC">
                 License Generator
             </div>
 
-            <div class="fw-medium fs-2 text-primary
+            <div class="fw-medium fs-2 
                 position-absolute start-50 translate-middle-x 
                 d-none d-md-block" style="color: #0071BC">License Generator</div>
             <div>
@@ -162,17 +162,27 @@ if (!isset($_SESSION['current_user'])) {
                 <div class="mb-2 col">
                     <label for="resellerFirstName" class="form-label text-secondary fw-medium"><span
                             class="text-danger">*</span>First name</label>
-                    <div class="">
+                    <!-- <div class="">
                         <input name="resellerFirstName" type="text" class="form-control rounded-3 border-2" id="resellerFirstName"
                             required>
+                    </div> -->
+
+                    <div class="" style="position: relative; display: flex;">
+                        <input name="resellerFirstName" id="resellerFirstName" data-search="resellers" placeholder="" class="select-button form-control rounded-3 border-2" />
+                        <ul id="" class="select-dropdown hidden">
+                            <!-- dynamic data -->
+                        </ul>
                     </div>
                 </div>
                 <div class="mb-2 col">
                     <label for="resellerLastName" class="form-label text-secondary fw-medium"><span
                             class="text-danger">*</span>Last name</label>
-                    <div class="">
-                        <input name="resellerLastName" type="text" class="form-control rounded-3 border-2" id="resellerLastName"
+                    <div class="" style="position: relative; display: flex;">
+                        <input name="resellerLastName" type="text" data-search="resellers" class="select-button form-control rounded-3 border-2" id="resellerLastName"
                             required>
+                        <ul id="" class="select-dropdown hidden">
+                            <!-- dynamic data -->
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -203,13 +213,23 @@ if (!isset($_SESSION['current_user'])) {
                     <label for="customerFirstName" class="form-label text-secondary fw-medium">
                         <span class="text-danger">*</span>
                         First name</label>
-                    <input name="customerFirstName" type="text" class="form-control rounded-3 border-2" required>
+                    <div class="" style="position: relative; display: flex;">
+                        <input id="customerFirstName" name="customerFirstName" type="text" data-search="customers" class="select-button form-control rounded-3 border-2" required>
+                        <ul id="" class="select-dropdown hidden">
+                            <!-- dynamic data -->
+                        </ul>
+                    </div>
                 </div>
                 <div class="col">
                     <label for="customerLastName" class="form-label text-secondary fw-medium">
                         <span class="text-danger">*</span>
                         Last name</label>
-                    <input name="customerLastName" type="text" class="form-control rounded-3 border-2" required>
+                    <div class="" style="position: relative; display: flex;">
+                        <input id="customerLastName" name="customerLastName" type="text" data-search="customers" class="select-button form-control rounded-3 border-2" required>
+                        <ul id="" class="select-dropdown hidden">
+                            <!-- dynamic data -->
+                        </ul>
+                    </div>
                 </div>
             </div>
             <div class="row mb-2">
@@ -223,7 +243,7 @@ if (!isset($_SESSION['current_user'])) {
                     <label for="customerAddress" class="form-label text-secondary fw-medium">
                         <span class="text-danger">*</span>
                         Address</label>
-                    <input name="customerAddress" type="text" class="form-control rounded-3 border-2" required>
+                    <input id="customerAddress" name="customerAddress" type="text" class="form-control rounded-3 border-2" required>
                 </div>
             </div>
             <div class="row mb-2">
@@ -231,13 +251,13 @@ if (!isset($_SESSION['current_user'])) {
                     <label for="customerEmail" class="form-label text-secondary fw-medium">
                         <span class="text-danger">*</span>
                         Email Address</label>
-                    <input name="customerEmail" type="email" class="form-control rounded-3 border-2" required>
+                    <input id="customerEmail" name="customerEmail" type="email" class="form-control rounded-3 border-2" required>
                 </div>
                 <div class="col">
                     <label for="customerContactNumber" class="form-label text-secondary fw-medium">
                         <span class="text-danger">*</span>
                         Contact Number</label>
-                    <input name="customerContactNumber" type="text" class="form-control rounded-3 border-2" required>
+                    <input id="customerContactNumber" name="customerContactNumber" type="text" class="form-control rounded-3 border-2" required>
                 </div>
             </div>
             <div class="my-3"
@@ -352,7 +372,7 @@ if (!isset($_SESSION['current_user'])) {
                         <svg style="left: 16px; top: 50%; transform: translateY(-50%);" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search position-absolute" viewBox="0 0 16 16">
                             <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
                         </svg>
-                        <input type=" text" id="searchLicenseInput" class="form-control rounded-4 border-2 ps-5 my-1" placeholder="Search for licenses...">
+                        <input type=" text" id="searchLicenseInput" class="form-control rounded-3 border-2 p-2 ps-5 my-1" placeholder="Search for a license...">
                     </div>
                     <div class="mb-4"></div>
 
@@ -371,9 +391,17 @@ if (!isset($_SESSION['current_user'])) {
                     </table>
                     <div id="noLicenseMessage" class="text-center text-secondary fs-4 my-5" hidden>No available license</div>
                     <div id="paginationDiv" class="d-flex justify-content-center align-items-center gap-2">
-                        <button id="paginationPrevBtn" class="btn btn-outline-dark btn-sm rounded-3">Prev</button>
+                        <button id="paginationPrevBtn" class="btn btn-outline-dark btn-sm rounded-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-chevron-left" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0" />
+                            </svg>
+                        </button>
                         <div id="paginationPageCount">1/2</div>
-                        <button id="paginationNextBtn" class="btn btn-outline-dark btn-sm rounded-3">Next</button>
+                        <button id="paginationNextBtn" class="btn btn-outline-dark btn-sm rounded-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-chevron-right" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -387,7 +415,7 @@ if (!isset($_SESSION['current_user'])) {
                 <div class="modal-header">
                     <h1 class="modal-title fs-5" id="exampleModalLabel">
                         <div class="d-flex align-items-center">
-                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold"
+                            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold"
                                 style="width: 40px; height: 40px;">
                                 <?php
                                 $user = strtoupper($_SESSION['current_user']['username'])[0];

@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['toast'] = [
             'status' => 'success',
             'header' => 'Login successful',
-            'message' => 'Welcome back, ' . strtoupper($user['username']) . '!'
+            'message' => 'Welcome back, ' . ($user['username']) . '!'
         ];
 
         if (isset($_POST['rememberMe'])) {

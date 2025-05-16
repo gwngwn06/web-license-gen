@@ -2,6 +2,54 @@
 session_start();
 header('Content-Type: application/json');
 
+function getIdByName($conn, $table, $firstname, $lastname)
+{
+    $id = null;
+    $stmt = $conn->prepare("SELECT id FROM $table WHERE first_name = ? AND last_name = ?");
+    $stmt->bind_param("ss", $firstname, $lastname);
+    $stmt->execute();
+    $stmt->bind_result($id);
+    $stmt->fetch();
+    $stmt->close();
+    return $id;
+}
+
+function updateReseller($conn, $resellerId, $resellerCode, $technician)
+{
+    $stmt = $conn->prepare("UPDATE resellers SET reseller_code = ?, technician = ? WHERE id = ?");
+    $stmt->bind_param("ssi", $resellerCode, $technician, $resellerId);
+    $stmt->execute();
+    $stmt->close();
+}
+
+function insertReseller($conn, $firstname, $lastname, $resellerCode, $technician)
+{
+    $stmt = $conn->prepare("INSERT INTO resellers (first_name, last_name, reseller_code, technician) VALUES(?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $firstname, $lastname, $resellerCode, $technician);
+    $stmt->execute();
+    $id = $stmt->insert_id;
+    $stmt->close();
+    return $id;
+}
+
+function updateCustomer($conn, $companyName, $address, $contactNumber, $email, $customerId)
+{
+    $stmt = $conn->prepare("UPDATE customers SET company_name = ?, address = ?, contact_number = ?, email = ? WHERE id = ?");
+    $stmt->bind_param("ssssi", $companyName, $address, $contactNumber, $email, $customerId);
+    $stmt->execute();
+    $stmt->close();
+}
+
+function insertCustomer($conn, $resellerId, $firstname, $lastname, $companyName, $address, $contactNumber, $email)
+{
+    $stmt = $conn->prepare("INSERT INTO customers (reseller_id, first_name, last_name, company_name, address, contact_number, email) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("issssss", $resellerId, $firstname, $lastname, $companyName, $address, $contactNumber, $email);
+    $stmt->execute();
+    $id = $stmt->insert_id;
+    $stmt->close();
+    return $id;
+}
+
 $currentUser = $_SESSION['current_user'] ?? null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
     if ($currentUser['id'] != $_POST['userId']  && $currentUser['account_type'] == 0) {
@@ -58,13 +106,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
         exit;
     }
 
-    // TODO: fix logic
     $conn->begin_transaction();
     try {
         // Make sure the licenseId exists in the database and belongs to the user
         // At this point, admin account can update all licenses, but reseller account can only update their own licenses
         if (!empty($licenseId) && ctype_digit($licenseId)) {
-            $checkStmt = $conn->prepare("SELECT id FROM licenses WHERE id = ? AND user_id = ?");
+            $checkStmt = $conn->prepare("SELECT id, reseller_id, customer_id FROM licenses WHERE id = ? AND user_id = ?");
             $checkStmt->bind_param("ii", $licenseId, $userId);
             $checkStmt->execute();
             $checkStmt->store_result();
@@ -74,51 +121,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
                 exit;
             }
 
-
             // Only admin account can update the permanent count of licenses
             if ($currentUser['account_type'] == 1) {
-                $resellerId = null;
-                $stmt1 = $conn->prepare("SELECT id FROM resellers WHERE first_name = ? AND last_name = ?");
-                $stmt1->bind_param("ss", $resellerFirstname, $resellerLastname);
-                $stmt1->execute();
-                $stmt1->bind_result($resellerId);
-                $stmt1->fetch();
-                $stmt1->close();
-
-                $customerId = null;
+                $resellerId = getIdByName($conn, "resellers", $resellerFirstname, $resellerLastname);
                 if ($resellerId !== null) {
-                    $stmt2 = $conn->prepare("UPDATE resellers SET reseller_code = ?, technician = ? WHERE id = ?");
-                    $stmt2->bind_param("ssi", $resellerCode, $technician, $resellerId);
-                    $stmt2->execute();
-                    $stmt2->close();
-
-                    $stmt3 = $conn->prepare("SELECT id from customers WHERE first_name = ? AND last_name = ?");
-                    $stmt3->bind_param("ss", $customerFirstname, $customerLastname);
-                    $stmt3->execute();
-                    $stmt3->bind_result($customerId);
-                    $stmt3->fetch();
-                    $stmt3->close();
-
-                    if ($customerId !== null) {
-                        $stmt5 = $conn->prepare("UPDATE customers SET company_name = ?, address = ?, contact_number = ?, email = ?");
-                        $stmt5->bind_param("ssss", $companyName, $customerAddress, $customerContactNumber, $customerEmailAddress);
-                        $stmt5->execute();
-                        $stmt5->close();
-                    } else {
-                        $stmt6 = $conn->prepare("INSERT INTO customers (reseller_id, company_name, first_name, last_name, address, contact_number, email) VALUES(?, ?, ?, ?, ?, ?, ?)");
-                        $stmt6->bind_param("issssss", $resellerId, $companyName, $customerFirstname, $customerLastname, $customerAddress, $customerContactNumber, $customerEmailAddress);
-                        $stmt6->execute();
-                        $customerId = $stmt6->insert_id;
-                        $stmt6->close();
-                    }
+                    updateReseller($conn, $resellerId, $resellerCode, $technician);
                 } else {
-                    $stmt4 = $conn->prepare("INSERT INTO resellers (first_name, last_name, reseller_code, technician) VALUES(?, ?, ?, ?)");
-                    $stmt4->bind_param("ssss", $resellerFirstname, $resellerLastname, $resellerCode, $technician);
-                    $stmt4->execute();
-                    $resellerId = $stmt4->insert_id;
-                    $stmt4->close();
+                    $resellerId = insertReseller($conn, $resellerFirstname, $resellerLastname, $resellerCode, $technician);
                 }
 
+                $customerId = getIdByName($conn, "customers", $customerFirstname, $customerLastname);
+                if ($customerId !== null) {
+                    updateCustomer($conn, $companyName, $customerAddress, $customerContactNumber, $customerEmailAddress, $customerId);
+                } else {
+                    $customerId = insertCustomer($conn, $resellerId, $customerFirstname, $customerLastname, $companyName, $customerAddress, $customerContactNumber, $customerEmailAddress);
+                }
 
                 $stmt = $conn->prepare("UPDATE licenses 
                 SET reseller_id = ?, customer_id  = ?, code_verifier = ?,  
@@ -129,48 +146,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
                 $stmt->bind_param("iisiiiiiiiiisii", $resellerId, $customerId, $codeVerifier, $mdcPermanentCount, $mdcTrialCount, $mdcTrialDays, $dncPermanentCount, $dncTrialCount, $dncTrialDays, $hmiPermanentCount, $hmiTrialCount, $hmiTrialDays, $annualMaintenanceExpDate, $licenseId, $userId);
                 $stmt->execute();
             } else {
-                $resellerId = null;
-                $stmt1 = $conn->prepare("SELECT id FROM resellers WHERE first_name = ? AND last_name = ?");
-                $stmt1->bind_param("ss", $resellerFirstname, $resellerLastname);
-                $stmt1->execute();
-                $stmt1->bind_result($resellerId);
-                $stmt1->fetch();
-                $stmt1->close();
-
-                $customerId = null;
+                $resellerId = getIdByName($conn, "resellers", $resellerFirstname, $resellerLastname);
                 if ($resellerId !== null) {
-                    $stmt2 = $conn->prepare("UPDATE resellers SET reseller_code = ?, technician = ? WHERE id = ?");
-                    $stmt2->bind_param("ssi", $resellerCode, $technician, $resellerId);
-                    $stmt2->execute();
-                    $stmt2->close();
-
-                    $stmt3 = $conn->prepare("SELECT id from customers WHERE first_name = ? AND last_name = ?");
-                    $stmt3->bind_param("ss", $customerFirstname, $customerLastname);
-                    $stmt3->execute();
-                    $stmt3->bind_result($customerId);
-                    $stmt3->fetch();
-                    $stmt3->close();
-
-                    if ($customerId !== null) {
-                        $stmt5 = $conn->prepare("UPDATE customers SET company_name = ?, address = ?, contact_number = ?, email = ?");
-                        $stmt5->bind_param("ssss", $companyName, $customerAddress, $customerContactNumber, $customerEmailAddress);
-                        $stmt5->execute();
-                        $stmt5->close();
-                    } else {
-                        $stmt6 = $conn->prepare("INSERT INTO customers (reseller_id, company_name, first_name, last_name, address, contact_number, email) VALUES(?, ?, ?, ?, ?, ?, ?)");
-                        $stmt6->bind_param("issssss", $resellerId, $companyName, $customerFirstname, $customerLastname, $customerAddress, $customerContactNumber, $customerEmailAddress);
-                        $stmt6->execute();
-                        $customerId = $stmt6->insert_id;
-                        $stmt6->close();
-                    }
+                    updateReseller($conn, $resellerId, $resellerCode, $technician);
                 } else {
-                    $stmt4 = $conn->prepare("INSERT INTO resellers (first_name, last_name, reseller_code, technician) VALUES(?, ?, ?, ?)");
-                    $stmt4->bind_param("ssss", $resellerFirstname, $resellerLastname, $resellerCode, $technician);
-                    $stmt4->execute();
-                    $resellerId = $stmt4->insert_id;
-                    $stmt4->close();
+                    $resellerId = insertReseller($conn, $resellerFirstname, $resellerLastname, $resellerCode, $technician);
                 }
 
+                $customerId = getIdByName($conn, "customers", $customerFirstname, $customerLastname);
+                if ($customerId !== null) {
+                    updateCustomer($conn, $companyName, $customerAddress, $customerContactNumber, $customerEmailAddress, $customerId);
+                } else {
+                    $customerId = insertCustomer($conn, $resellerId, $customerFirstname, $customerLastname, $companyName, $customerAddress, $customerContactNumber, $customerEmailAddress);
+                }
 
                 $stmt = $conn->prepare("UPDATE licenses 
                 SET reseller_id = ?, customer_id  = ?, code_verifier = ?,
@@ -183,61 +171,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
             $lastId = $licenseId;
             $isUpdated = true;
         } else {
-            $resellerId = null;
-            $stmt1 = $conn->prepare("SELECT id FROM resellers WHERE first_name = ? AND last_name = ?");
-            $stmt1->bind_param("ss", $resellerFirstname, $resellerLastname);
-            $stmt1->execute();
-            $stmt1->bind_result($resellerId);
-            $stmt1->fetch();
-            $stmt1->close();
 
-            $customerId = null;
+
+            $resellerId = getIdByName($conn, "resellers", $resellerFirstname, $resellerLastname);
             if ($resellerId !== null) {
-                $stmt2 = $conn->prepare("UPDATE resellers SET reseller_code = ?, technician = ? WHERE id = ?");
-                $stmt2->bind_param("ssi", $resellerCode, $technician, $resellerId);
-                $stmt2->execute();
-                $stmt2->close();
-
-                $stmt3 = $conn->prepare("SELECT id from customers WHERE first_name = ? AND last_name = ?");
-                $stmt3->bind_param("ss", $customerFirstname, $customerLastname);
-                $stmt3->execute();
-                $stmt3->bind_result($customerId);
-                $stmt3->fetch();
-                $stmt3->close();
-
-                if ($customerId !== null) {
-                    $stmt5 = $conn->prepare("UPDATE customers SET company_name = ?, address = ?, contact_number = ?, email = ?");
-                    $stmt5->bind_param("ssss", $companyName, $customerAddress, $customerContactNumber, $customerEmailAddress);
-                    $stmt5->execute();
-                    $stmt5->close();
-                } else {
-                    $stmt6 = $conn->prepare("INSERT INTO customers (reseller_id, company_name, first_name, last_name, address, contact_number, email) VALUES(?, ?, ?, ?, ?, ?, ?)");
-                    $stmt6->bind_param("issssss", $resellerId, $companyName, $customerFirstname, $customerLastname, $customerAddress, $customerContactNumber, $customerEmailAddress);
-                    $stmt6->execute();
-                    $customerId = $stmt6->insert_id;
-                    $stmt6->close();
-                }
+                updateReseller($conn, $resellerId, $resellerCode, $technician);
             } else {
-                $stmt4 = $conn->prepare("INSERT INTO resellers (first_name, last_name, reseller_code, technician) VALUES(?, ?, ?, ?)");
-                $stmt4->bind_param("ssss", $resellerFirstname, $resellerLastname, $resellerCode, $technician);
-                $stmt4->execute();
-                $resellerId = $stmt4->insert_id;
-                $stmt4->close();
-
-                $stmt6 = $conn->prepare("INSERT INTO customers (reseller_id, company_name, first_name, last_name, address, contact_number, email) VALUES(?, ?, ?, ?, ?, ?, ?)");
-                $stmt6->bind_param("issssss", $resellerId, $companyName, $customerFirstname, $customerLastname, $customerAddress, $customerContactNumber, $customerEmailAddress);
-                $stmt6->execute();
-                $customerId = $stmt6->insert_id;
-                $stmt6->close();
+                $resellerId = insertReseller($conn, $resellerFirstname, $resellerLastname, $resellerCode, $technician);
             }
 
-            $stmt7 = $conn->prepare("INSERT INTO licenses (user_id, reseller_id, customer_id, code_verifier, mdc_permanent_count, mdc_trial_count, mdc_trial_days, dnc_permanent_count, dnc_trial_count, dnc_trial_days, hmi_permanent_count, hmi_trial_count, hmi_trial_days, annual_maintenance_expiration_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt7->bind_param("iiisiiiiiiiiis", $userId, $resellerId, $customerId, $codeVerifier, $mdcPermanentCount, $mdcTrialCount, $mdcTrialDays, $dncPermanentCount, $dncTrialCount, $dncTrialDays, $hmiPermanentCount, $hmiTrialCount, $hmiTrialDays, $annualMaintenanceExpDate);
-            $stmt7->execute();
-            $lastId = $stmt7->insert_id;
+            $customerId = getIdByName($conn, "customers", $customerFirstname, $customerLastname);
+            if ($customerId !== null) {
+                updateCustomer($conn, $companyName, $customerAddress, $customerContactNumber, $customerEmailAddress, $customerId);
+            } else {
+                $customerId = insertCustomer($conn, $resellerId, $customerFirstname, $customerLastname, $companyName, $customerAddress, $customerContactNumber, $customerEmailAddress);
+            }
+
+            $stmt = $conn->prepare("INSERT INTO licenses (user_id, reseller_id, customer_id, code_verifier, mdc_permanent_count, mdc_trial_count, mdc_trial_days, dnc_permanent_count, dnc_trial_count, dnc_trial_days, hmi_permanent_count, hmi_trial_count, hmi_trial_days, annual_maintenance_expiration_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("iiisiiiiiiiiis", $userId, $resellerId, $customerId, $codeVerifier, $mdcPermanentCount, $mdcTrialCount, $mdcTrialDays, $dncPermanentCount, $dncTrialCount, $dncTrialDays, $hmiPermanentCount, $hmiTrialCount, $hmiTrialDays, $annualMaintenanceExpDate);
+            $stmt->execute();
+            $lastId = $stmt->insert_id;
             $isUpdated = false;
-            $stmt7->close();
         }
+        $stmt->close();
 
         $createdAt = null;
         $updatedAt = null;
@@ -304,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
 
         try {
             $searchParam = '%' . $searchQuery . '%';
-            $sql = "SELECT l.id, l.user_id, l.code_verifier, r.first_name AS reseller_first_name, r.last_name AS reseller_last_name, r.reseller_code, r.technician,
+            $sql = "SELECT l.id, l.user_id, l.reseller_id, l.code_verifier, r.first_name AS reseller_first_name, r.last_name AS reseller_last_name, r.reseller_code, r.technician,
             c.company_name, c.first_name AS customer_first_name, c.last_name AS customer_last_name, c.email AS customer_email, c.address AS customer_address, c.contact_number as customer_contact_number, 
             l.mdc_permanent_count, l.mdc_trial_count, l.mdc_trial_days,
             l.dnc_permanent_count, l.dnc_trial_count, l.dnc_trial_days,
@@ -387,13 +343,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
             $conn->close();
         }
     } else if (isset($_GET['id'])) {
+        // check if license exists
         $licenseId = $_GET['id'];
         $userId = $currentUser['id'];
 
         $conn = new mysqli("localhost", "root", "", "testdb");
         if ($conn->connect_error) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to save license. Please try again later.']);
+            echo json_encode(['error' => 'Something went wrong. Please try again later.']);
             exit;
         }
 
@@ -429,6 +386,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
         } catch (Exception $e) {
             http_response_code(404);
             echo json_encode(['error' => 'License not found']);
+        } finally {
+            $conn->close();
+        }
+    } else if (isset($_GET['action']) && $_GET['action'] == "searchDropdown") {
+        $resellerId = $_GET['resellerId'] ?? '';
+        $query = trim($_GET['query'] ?? '');
+        $dataSearch = in_array($_GET['dataSearch'] ?? '', ['resellers', 'customers']) ? $_GET['dataSearch'] : 'resellers';
+        $searchParam = '%' . $query . '%';
+
+        $conn = new mysqli("localhost", "root", "", "testdb");
+        if ($conn->connect_error) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Something went wrong. Please try again later.']);
+            exit;
+        }
+
+        if ($dataSearch == "resellers") {
+            $sql = "SELECT id, first_name, last_name, reseller_code, technician FROM $dataSearch WHERE (first_name LIKE ? OR last_name LIKE ?) ORDER BY first_name LIMIT 10";
+            $params = [$searchParam, $searchParam];
+            $types = "ss";
+        } else if ($dataSearch == "customers" && ctype_digit($resellerId)) {
+            $sql = "SELECT id, company_name, first_name, last_name, address, contact_number, email FROM $dataSearch WHERE reseller_id = ? AND (first_name LIKE ? OR last_name LIKE ?) ORDER BY first_name LIMIT 10";
+            $params = [$resellerId, $searchParam, $searchParam];
+            $types = "iss";
+        } else {
+            echo json_encode(['success' => 'No customers found']);
+            exit;
+        }
+        try {
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param($types, ...$params);
+            $stmt->execute();
+
+            $result = $stmt->get_result();
+            $rows = [];
+
+            while ($row = $result->fetch_assoc()) {
+                $rows[] = $row;
+            }
+            $stmt->close();
+            echo json_encode(['success' => $dataSearch . ' found', 'result' => $rows]);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
         } finally {
             $conn->close();
         }
