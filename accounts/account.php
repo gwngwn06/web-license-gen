@@ -23,9 +23,6 @@ class Account
         if (empty($this->username) || empty($this->password)) {
             return ["status" => "error", "message" => "Email and password are required"];
         }
-        // if (!filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
-        //     return ["status" => "error", "message" => "Invalid email format"];
-        // }
 
         $conn = new mysqli("localhost", "root", "", "testdb");
         if ($conn->connect_error) {

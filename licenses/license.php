@@ -2,6 +2,12 @@
 session_start();
 header('Content-Type: application/json');
 
+function isValidDate($date)
+{
+    $parsedDate = DateTime::createFromFormat('Y-m-d H:i:s', $date);
+    return $parsedDate && $parsedDate->format('Y-m-d H:i:s') === $date;
+}
+
 function getIdByName($conn, $table, $firstname, $lastname)
 {
     $id = null;
@@ -81,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
     $hmiTrialCount = $_POST['hmiTrialCount'] ?? 0;
     $hmiTrialDays = $_POST['hmiTrialDays'] ?? 40;
     $annualMaintenanceExpDate = $_POST['annualMaintenanceExpDate'] ?? null;
+    $dateLicenseUsed = isValidDate($_POST['dateLicenseUsed']) ? $_POST['dateLicenseUsed'] : null;
 
     if (
         empty($codeVerifier) || empty($resellerFirstname) || empty($resellerLastname) ||
@@ -108,7 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
 
     $conn->begin_transaction();
     try {
-        // Make sure the licenseId exists in the database and belongs to the user
+        // Update License
+        // Check if licenseId exists in the database and belongs to the user for an update
         // At this point, admin account can update all licenses, but reseller account can only update their own licenses
         if (!empty($licenseId) && ctype_digit($licenseId)) {
             $checkStmt = $conn->prepare("SELECT id, reseller_id, customer_id FROM licenses WHERE id = ? AND user_id = ?");
@@ -141,11 +149,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
                 SET reseller_id = ?, customer_id  = ?, code_verifier = ?,  
                 mdc_permanent_count = ?, mdc_trial_count = ?, mdc_trial_days = ?, dnc_permanent_count = ?, 
                 dnc_trial_count = ?, dnc_trial_days = ?, hmi_permanent_count = ?, hmi_trial_count = ?, 
-                hmi_trial_days = ?, annual_maintenance_expiration_date = ? 
+                hmi_trial_days = ?, annual_maintenance_expiration_date = ?, service_license_updated_at = ?
                 WHERE id = ? AND user_id = ?");
-                $stmt->bind_param("iisiiiiiiiiisii", $resellerId, $customerId, $codeVerifier, $mdcPermanentCount, $mdcTrialCount, $mdcTrialDays, $dncPermanentCount, $dncTrialCount, $dncTrialDays, $hmiPermanentCount, $hmiTrialCount, $hmiTrialDays, $annualMaintenanceExpDate, $licenseId, $userId);
+                $stmt->bind_param(
+                    "iisiiiiiiiiissii",
+                    $resellerId,
+                    $customerId,
+                    $codeVerifier,
+                    $mdcPermanentCount,
+                    $mdcTrialCount,
+                    $mdcTrialDays,
+                    $dncPermanentCount,
+                    $dncTrialCount,
+                    $dncTrialDays,
+                    $hmiPermanentCount,
+                    $hmiTrialCount,
+                    $hmiTrialDays,
+                    $annualMaintenanceExpDate,
+                    $dateLicenseUsed,
+                    $licenseId,
+                    $userId
+                );
                 $stmt->execute();
             } else {
+                // Reseller license update
+                // permanent licenses are not included here
                 $resellerId = getIdByName($conn, "resellers", $resellerFirstname, $resellerLastname);
                 if ($resellerId !== null) {
                     updateReseller($conn, $resellerId, $resellerCode, $technician);
@@ -163,16 +191,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
                 $stmt = $conn->prepare("UPDATE licenses 
                 SET reseller_id = ?, customer_id  = ?, code_verifier = ?,
                 mdc_trial_count = ?, mdc_trial_days = ?, dnc_trial_count = ?, dnc_trial_days = ?,  hmi_trial_count = ?, 
-                hmi_trial_days = ?, annual_maintenance_expiration_date = ? 
+                hmi_trial_days = ?, annual_maintenance_expiration_date = ?, service_license_updated_at = ?
                 WHERE id = ? AND user_id = ?");
-                $stmt->bind_param("iisiiiiiisii", $resellerId, $customerId, $codeVerifier, $mdcTrialCount, $mdcTrialDays, $dncTrialCount, $dncTrialDays, $hmiTrialCount, $hmiTrialDays, $annualMaintenanceExpDate, $licenseId, $userId);
+                $stmt->bind_param(
+                    "iisiiiiiissii",
+                    $resellerId,
+                    $customerId,
+                    $codeVerifier,
+                    $mdcTrialCount,
+                    $mdcTrialDays,
+                    $dncTrialCount,
+                    $dncTrialDays,
+                    $hmiTrialCount,
+                    $hmiTrialDays,
+                    $annualMaintenanceExpDate,
+                    $dateLicenseUsed,
+                    $licenseId,
+                    $userId
+                );
                 $stmt->execute();
             }
             $lastId = $licenseId;
             $isUpdated = true;
         } else {
 
-
+            // Generate License
             $resellerId = getIdByName($conn, "resellers", $resellerFirstname, $resellerLastname);
             if ($resellerId !== null) {
                 updateReseller($conn, $resellerId, $resellerCode, $technician);
@@ -187,8 +230,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
                 $customerId = insertCustomer($conn, $resellerId, $customerFirstname, $customerLastname, $companyName, $customerAddress, $customerContactNumber, $customerEmailAddress);
             }
 
-            $stmt = $conn->prepare("INSERT INTO licenses (user_id, reseller_id, customer_id, code_verifier, mdc_permanent_count, mdc_trial_count, mdc_trial_days, dnc_permanent_count, dnc_trial_count, dnc_trial_days, hmi_permanent_count, hmi_trial_count, hmi_trial_days, annual_maintenance_expiration_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("iiisiiiiiiiiis", $userId, $resellerId, $customerId, $codeVerifier, $mdcPermanentCount, $mdcTrialCount, $mdcTrialDays, $dncPermanentCount, $dncTrialCount, $dncTrialDays, $hmiPermanentCount, $hmiTrialCount, $hmiTrialDays, $annualMaintenanceExpDate);
+            $stmt = $conn->prepare("INSERT INTO licenses (user_id, reseller_id, customer_id, code_verifier, mdc_permanent_count, mdc_trial_count,
+             mdc_trial_days, dnc_permanent_count, dnc_trial_count, dnc_trial_days, hmi_permanent_count, hmi_trial_count, 
+             hmi_trial_days, annual_maintenance_expiration_date, service_license_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param(
+                "iiisiiiiiiiiiss",
+                $userId,
+                $resellerId,
+                $customerId,
+                $codeVerifier,
+                $mdcPermanentCount,
+                $mdcTrialCount,
+                $mdcTrialDays,
+                $dncPermanentCount,
+                $dncTrialCount,
+                $dncTrialDays,
+                $hmiPermanentCount,
+                $hmiTrialCount,
+                $hmiTrialDays,
+                $annualMaintenanceExpDate,
+                $dateLicenseUsed
+            );
             $stmt->execute();
             $lastId = $stmt->insert_id;
             $isUpdated = false;
@@ -231,11 +293,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
     }
 }
 
-// function isValidDate($date)
-// {
-//     $parsedDate = DateTime::createFromFormat('Y-m-d', $date);
-//     return $parsedDate && $parsedDate->format('Y-m-d') === $date;
-// }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
     if (isset($_GET['search'])) {
@@ -265,7 +322,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
             l.mdc_permanent_count, l.mdc_trial_count, l.mdc_trial_days,
             l.dnc_permanent_count, l.dnc_trial_count, l.dnc_trial_days,
             l.hmi_permanent_count, l.hmi_trial_count, l.hmi_trial_days,
-            l.license_created_at, l.license_updated_at
+            l.license_created_at, l.license_updated_at, l.service_license_updated_at
             FROM licenses AS l
             JOIN resellers AS r ON l.reseller_id = r.id
             JOIN customers AS c ON l.customer_id = c.id

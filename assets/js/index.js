@@ -61,23 +61,23 @@ const LicenseGenerator = {
                             data: btoa(String.fromCharCode(...savedCiphertext)),
                             iv: btoa(String.fromCharCode(...iv)),
                             salt: btoa(String.fromCharCode(...salt)),
-                            "kdf": {
-                                "name": "PBKDF2",
-                                "iterations": 100000,
-                                "hash": "SHA-256",
-                                "keyLength": 256
-                            }
+                            // "kdf": {
+                            //     "name": "PBKDF2",
+                            //     "iterations": 100000,
+                            //     "hash": "SHA-256",
+                            //     "keyLength": 256
+                            // }
                         };
                         const unencryptedData = {
                             data,
                             iv: null,
                             salt: null,
-                            "kdf": {
-                                "name": "PBKDF2",
-                                "iterations": 100000,
-                                "hash": "SHA-256",
-                                "keyLength": 256
-                            }
+                            // "kdf": {
+                            //     "name": "PBKDF2",
+                            //     "iterations": 100000,
+                            //     "hash": "SHA-256",
+                            //     "keyLength": 256
+                            // }
                         }
                         console.log("download unencryptedData: ", unencryptedData);
                         console.log("download encryptedData:", encryptedData);
@@ -124,7 +124,7 @@ const LicenseGenerator = {
                     this._decrypt(encrypted.data, encrypted.iv, encrypted.salt, this._secretkey).then(async (decryptedData) => {
                         console.log("decryptedData: ", decryptedData);
                         if (
-                            decryptedData.licenseId == null || decryptedData.codeVerifier == null
+                            decryptedData.codeVerifier == null
                             || decryptedData.resellerFirstName == null || decryptedData.resellerLastName == null
                             || decryptedData.resellerCode == null
                             || decryptedData.companyName == null
@@ -141,21 +141,31 @@ const LicenseGenerator = {
                             throw new Error("Missing file data");
                         }
 
-                        try {
-                            const params = new URLSearchParams({ id: decryptedData.licenseId }).toString();
-                            const resp = await fetch(`./licenses/license.php?${params}`)
-                            const result = await resp.json();
-                            if (result.error) throw new Error(result.error)
-
-                            document.getElementById("userId").value = result.userId;
-
-                        } catch (err) {
-                            this._showToastMessage(err.message, "error")
-                            return;
+                        if((decryptedData.licenseId == null || decryptedData.licenseId === undefined || decryptedData.licenseId === '') &&
+                            (decryptedData.dateLicenseUsed === undefined || decryptedData.dateLicenseUsed === null ||
+                             decryptedData.dateLicenseUsed == '' || isNaN(new Date(decryptedData.dateLicenseUsed).getTime()))) {
+                            throw new Error("Missing file data");
                         }
 
+                        if (decryptedData.licenseId) {
+                            // Existing license ID found in the license file
+                            console.log("Existing license");
+                            try {
+                                const params = new URLSearchParams({ id: decryptedData.licenseId}).toString();
+                                const resp = await fetch(`./licenses/license.php?${params}`)
+                                const result = await resp.json();
+                                if (result.error) throw new Error(result.error)
 
-                        this._showToastMessage(null, "success");
+                                document.getElementById("userId").value = result.userId;
+
+                            } catch (err) {
+                                this._showToastMessage(err.message, "error")
+                                return;
+                            }
+                        } else {
+                            console.log("Newly generated license from desktop app");
+                            // New file generated from the desktop app
+                        }
 
                         const utypeDiv = document.getElementById("utype");
                         const utype = utypeDiv.getAttribute('data-utype');
@@ -189,6 +199,7 @@ const LicenseGenerator = {
                             }
                         }
 
+                        this._showToastMessage(null, "success");
                         document.getElementById("fileDownloadText").textContent = "Update License File";
                     }).catch((error) => {
                         console.log(error);
@@ -271,7 +282,7 @@ const LicenseGenerator = {
         const toastHeader = toastMessage.querySelector(".toast-header-text");
         if (type === "success") {
             toastHeader.innerHTML = message ?? "Success";
-            toastBody.innerHTML = "License file uploaded successfully.";
+            toastBody.innerHTML = "License file was imported successfully.";
             toastMessage.classList.remove("text-bg-primary");
             toastMessage.classList.remove("text-bg-danger");
             toastMessage.classList.add("text-bg-success");
@@ -511,6 +522,7 @@ const SearchLicense = {
                             // console.log(camelCaseKey);
                             // if (camelCaseKey == "userId") continue;
                             if (camelCaseKey == "id") camelCaseKey = "licenseId";
+                            if (camelCaseKey == "serviceLicenseUpdatedAt") camelCaseKey = "dateLicenseUsed";
 
                             const input = generateLicenseForm.querySelector(`input[name="${camelCaseKey}"]`);
                             if (input) {
@@ -546,12 +558,29 @@ const UserProfile = {
             minute: '2-digit'
         };
         document.getElementById('profileModal').addEventListener('shown.bs.modal', async () => {
+            const profileModalBody = document.getElementById("profileModalBody");
+            const placeholder = `
+            <h5 class="card-title placeholder-glow">
+                <span class="placeholder col-4"></span>
+                <span class="placeholder col-6"></span>
+            </h5>
+            <p class="card-text placeholder-glow">
+                <span class="placeholder col-4"></span>
+                <span class="placeholder col-6"></span>
+                <span class="placeholder col-4"></span>
+                <span class="placeholder col-6"></span>
+                <span class="placeholder col-4"></span>
+                <span class="placeholder col-6"></span>
+                <span class="placeholder col-4"></span>
+                <span class="placeholder col-6"></span>
+            </p>
+            `;
+            profileModalBody.innerHTML = placeholder;
             try {
+
                 const resp = await fetch("./accounts/user.php");
                 const result = await resp.json();
-
-                // console.log("USER: ", result);
-                const profileModalBody = document.getElementById("profileModalBody");
+                profileModalBody.innerHTML = "";
                 const user = result.user;
                 let resellerInfo = "";
                 let badgeElement = "";
@@ -597,6 +626,8 @@ const UserProfile = {
             </div>
             ${user.accountType == "0" ? resellerInfo : ""}
             `;
+
+
             } catch (err) {
                 console.log("ERROR: ", err.message);
             }

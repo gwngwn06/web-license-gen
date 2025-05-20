@@ -116,7 +116,7 @@ if (!isset($_SESSION['current_user'])) {
         </svg>
         <input type="text" id="searchInput" class="form-control rounded-3 border-2 ps-5 p-2 mx-1 my-2 my-md-3" style="background-color: #F6F6F6" placeholder="Search for a license...">
     </div>
-    <main class="mx-auto mb-5 bg-white border rounded-4 p-5 col-md-8 col-lg-7 col-sm-11 shadow-sm">
+    <main class="mx-auto mb-5 bg-white border rounded-4 p-4 p-lg-5 col-md-8 col-lg-7 col-sm-11 shadow-sm">
         <div class="d-flex justify-content-between align-items-center mb-3 position-relative">
             <div class="d-none d-md-block" style="visibility: hidden;">
             </div>
@@ -130,7 +130,7 @@ if (!isset($_SESSION['current_user'])) {
             <div>
                 <input type="file" accept=".json" id="licenseUpload" class="d-none">
                 <label for="licenseUpload" class="btn btn-sm btn-outline-success rounded-3">
-                    Upload existing license
+                    Import existing license
                 </label>
             </div>
         </div>
@@ -147,6 +147,7 @@ if (!isset($_SESSION['current_user'])) {
             echo "<input id='userId' type='hidden' name='userId' value='$userId'>
                   <input id='licenseId' type='hidden' name='licenseId' value=''>";
             ?>
+            <input id='dateLicenseUsed' name="dateLicenseUsed" type="hidden" value="" />
             <div class="">
                 <label for="codeVerifier" class="form-label text-secondary fw-medium"><span class="text-danger">*</span>
                     Verifier Code
@@ -334,11 +335,11 @@ if (!isset($_SESSION['current_user'])) {
                 </div>
             </div>
 
-            <div class="text-end mt-4">
+            <div class="text-center text-lg-end mt-4">
                 <div class="mt-3 mb-3"
                     style="border-bottom: 1px solid var(--bs-secondary); border-width: 1px;  opacity: 0.2;">
                 </div>
-                <button type="submit" class="btn btn-primary rounded-3">
+                <button type="submit" class="btn btn-primary rounded-3 mt-2 mt-lg-4">
                     <span id="fileDownloadText">Generate & Download License File</span>
                 </button>
             </div>
@@ -409,7 +410,7 @@ if (!isset($_SESSION['current_user'])) {
     </div>
 
     <!-- Modal -->
-    <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal" id="profileModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -425,7 +426,7 @@ if (!isset($_SESSION['current_user'])) {
                             <div class="ms-2 text-start">
                                 <?php
                                 $user = $_SESSION['current_user'];
-                                $username = strtoupper($user['username']);
+                                $username = ($user['username']);
                                 $email = $user['email'];
                                 echo "
                                 <div class='fw-medium '>
