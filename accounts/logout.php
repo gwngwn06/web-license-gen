@@ -1,10 +1,12 @@
 <?php
+require_once '../utils/constants.php';
+
 session_start();
 
 if (isset($_COOKIE['remember_user'])) {
     $token = $_COOKIE['remember_user'];
 
-    $conn = new mysqli("localhost", "root", "", "testdb");
+    $conn = new mysqli("localhost", "root", "", DB_NAME);
     if ($conn->connect_error) {
         return;;
     }

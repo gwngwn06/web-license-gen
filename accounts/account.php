@@ -1,4 +1,5 @@
 <?php
+require_once './utils/constants.php';
 class Account
 {
     public $username;
@@ -24,7 +25,7 @@ class Account
             return ["status" => "error", "message" => "Email and password are required"];
         }
 
-        $conn = new mysqli("localhost", "root", "", "testdb");
+        $conn = new mysqli("localhost", "root", "", DB_NAME);
         if ($conn->connect_error) {
             return ["status" => "error", "message" => "Something went wrong. Please try again later."];
         }
@@ -54,7 +55,7 @@ class Account
 
     public function generateUserToken($userId, $token)
     {
-        $conn = new mysqli("localhost", "root", "", "testdb");
+        $conn = new mysqli("localhost", "root", "", DB_NAME);
         if ($conn->connect_error) {
             return ["status" => "error", "message" => "Something went wrong. Please try again later."];
         }
@@ -75,7 +76,7 @@ class Account
     public function getUserByToken($token)
     {
         $days = 30;
-        $conn = new mysqli("localhost", "root", "", "testdb");
+        $conn = new mysqli("localhost", "root", "", DB_NAME);
         if ($conn->connect_error) {
             return ["status" => "error", "message" => "Something went wrong. Please try again later."];
         }
@@ -169,7 +170,7 @@ class Account
 
     private function isEmailAlreadyExists()
     {
-        $conn = new mysqli("localhost", "root", "", "testdb");
+        $conn = new mysqli("localhost", "root", "", DB_NAME);
         if ($conn->connect_error) {
             return true;
         }
@@ -195,7 +196,7 @@ class Account
 
     private function isUsernameAlreadyExists()
     {
-        $conn = new mysqli("localhost", "root", "", "testdb");
+        $conn = new mysqli("localhost", "root", "", DB_NAME);
         if ($conn->connect_error) {
             return true;
         }
@@ -221,7 +222,7 @@ class Account
 
     public function registerNewUser()
     {
-        $conn = new mysqli("localhost", "root", "", "testdb");
+        $conn = new mysqli("localhost", "root", "", DB_NAME);
         if ($conn->connect_error) {
             return ["status" => "error", "message" => "Something went wrong. Please try again later."];
         }

@@ -1,6 +1,9 @@
 <?php
+require_once '../utils/constants.php';
+
 session_start();
 header('Content-Type: application/json');
+
 
 function isValidDate($date)
 {
@@ -106,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
         exit;
     }
 
-    $conn = new mysqli("localhost", "root", "", "testdb");
+    $conn = new mysqli("localhost", "root", "", DB_NAME);
     if ($conn->connect_error) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to save license. Please try again later.']);
@@ -308,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
 
         $searchQuery = trim($searchQuery);
 
-        $conn = new mysqli("localhost", "root", "", "testdb");
+        $conn = new mysqli("localhost", "root", "", DB_NAME);
         if ($conn->connect_error) {
             http_response_code(500);
             echo json_encode(['error' => 'Failed to save license. Please try again later.']);
@@ -404,7 +407,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
         $licenseId = $_GET['id'];
         $userId = $currentUser['id'];
 
-        $conn = new mysqli("localhost", "root", "", "testdb");
+        $conn = new mysqli("localhost", "root", "", DB_NAME);
         if ($conn->connect_error) {
             http_response_code(500);
             echo json_encode(['error' => 'Something went wrong. Please try again later.']);
@@ -452,7 +455,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
         $dataSearch = in_array($_GET['dataSearch'] ?? '', ['resellers', 'customers']) ? $_GET['dataSearch'] : 'resellers';
         $searchParam = '%' . $query . '%';
 
-        $conn = new mysqli("localhost", "root", "", "testdb");
+        $conn = new mysqli("localhost", "root", "", DB_NAME);
         if ($conn->connect_error) {
             http_response_code(500);
             echo json_encode(['error' => 'Something went wrong. Please try again later.']);

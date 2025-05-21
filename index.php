@@ -264,9 +264,17 @@ if (!isset($_SESSION['current_user'])) {
             <div class="my-3"
                 style="border-bottom: 1px dashed var(--bs-secondary); border-width: 3px;  opacity: 0.1;">
             </div>
-            <div class="fw-medium fs-5 mt-4 mb-2">Machine License</div>
+            <div class="fw-medium fs-5 mt-4 mb-2">Machine License
+                <span class="fw-normal fs-6 ms-2 d-none" id="licenseTagInfo">
+                    <code>
+                        <small>
+                            <img src='./assets/icons/check.svg' /> Available <img src='./assets/icons/arrow-repeat.svg' /> In use <img src='./assets/icons/clock.svg' /> Remaining days
+                        </small>
+                    </code>
+                </span>
+            </div>
 
-            <div id="machineLicenseContainer" class="container text-center mb-3">
+            <div id="machineLicenseContainer" class="text-center mb-3">
                 <div class="row fw-medium mb-2">
                     <div class="col-2">
                         Type
@@ -286,51 +294,129 @@ if (!isset($_SESSION['current_user'])) {
                     <div class="col-2">
                         <span class="text-danger">*</span>MDC
                     </div>
-                    <div class="col permanent-license">
+                    <div class="col permanent-license input-group">
                         <input name="mdcPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
                             id="mdcPermanentCount">
+                        <span class="license-info input-group-text d-flex flex-column px-1 py-0 d-none" id="">
+                            <div class="">
+                                <img src="./assets/icons/check.svg" />
+                                <span class="available-license"><small>0</small></span>
+                            </div>
+                            <div class="">
+                                <img src="./assets/icons/arrow-repeat.svg" />
+                                <span class="in-use-license"><small>0</small></span>
+                            </div>
+                        </span>
                     </div>
-                    <div class="col">
+                    <div class="col input-group input-group">
                         <input name="mdcTrialCount" value="0" type="number" class="form-control rounded-3 border-2"
                             id="mdcTrialCount">
+                        <span class="license-info input-group-text d-flex flex-column px-1 py-0 d-none" id="">
+                            <div class="">
+                                <img src="./assets/icons/check.svg" />
+                                <span><small>0</small></span>
+                            </div>
+                            <div class="">
+                                <img src="./assets/icons/arrow-repeat.svg" />
+                                <span class=""><small>0</small></span>
+                            </div>
+                        </span>
                     </div>
-                    <div class="col">
+                    <div class="col input-group input-group">
                         <input name="mdcTrialDays" value="40" type="number" class="form-control rounded-3 border-2"
                             id="mdcTrialDays">
+                        <span class="license-info input-group-text px-1 d-none" id="" style="padding-top: 10px; padding-bottom: 10px;">
+                            <div class="">
+                                <img src="./assets/icons/clock.svg" />
+                                <span><small>0</small></span>
+                            </div>
+                        </span>
                     </div>
                 </div>
                 <div class="row mb-2 align-items-center">
                     <div class="col-2">
                         <span class="text-danger">*</span>DNC
                     </div>
-                    <div class="col permanent-license">
+                    <div class="col permanent-license input-group">
                         <input name="dncPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
                             id="dncPermanentCount" required>
+                        <span class="license-info input-group-text d-flex flex-column px-1 py-0 d-none" id="">
+                            <div class="">
+                                <img src="./assets/icons/check.svg" />
+                                <span><small>0</small></span>
+                            </div>
+                            <div class="">
+                                <img src="./assets/icons/arrow-repeat.svg" />
+                                <span class=""><small>0</small></span>
+                            </div>
+                        </span>
                     </div>
-                    <div class="col">
+                    <div class="col input-group">
                         <input name="dncTrialCount" value="0" type="number" class="form-control rounded-3 border-2"
                             id="dncTrialCount" required>
+                        <span class="license-info input-group-text d-flex flex-column px-1 py-0 d-none" id="">
+                            <div class="">
+                                <img src="./assets/icons/check.svg" />
+                                <span><small>0</small></span>
+                            </div>
+                            <div class="">
+                                <img src="./assets/icons/arrow-repeat.svg" />
+                                <span class=""><small>0</small></span>
+                            </div>
+                        </span>
                     </div>
-                    <div class="col">
+                    <div class="col input-group">
                         <input name="dncTrialDays" value="40" type="number" class="form-control rounded-3 border-2"
                             id="dncTrialDays" required>
+                        <span class="license-info input-group-text px-1 d-none" id="" style="padding-top: 10px; padding-bottom: 10px;">
+                            <div class="">
+                                <img src="./assets/icons/clock.svg" />
+                                <span><small>0</small></span>
+                            </div>
+                        </span>
                     </div>
                 </div>
                 <div class="row mb-2 align-items-center">
                     <div class="col-2">
                         <span class="text-danger">*</span>HMI
                     </div>
-                    <div class="col permanent-license">
+                    <div class="col permanent-license input-group">
                         <input name="hmiPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
                             id="hmiPermanentCount">
+                        <span class="license-info input-group-text d-flex flex-column px-1 py-0 d-none" id="">
+                            <div class="">
+                                <img src="./assets/icons/check.svg" />
+                                <span><small>0</small></span>
+                            </div>
+                            <div class="">
+                                <img src="./assets/icons/arrow-repeat.svg" />
+                                <span class=""><small>0</small></span>
+                            </div>
+                        </span>
                     </div>
-                    <div class="col">
+                    <div class="col input-group">
                         <input name="hmiTrialCount" value="0" type="number" class="form-control rounded-3 border-2"
                             id="hmiTrialCount">
+                        <span class="license-info input-group-text d-flex flex-column px-1 py-0 d-none" id="">
+                            <div class="">
+                                <img src="./assets/icons/check.svg" />
+                                <span><small>0</small></span>
+                            </div>
+                            <div class="">
+                                <img src="./assets/icons/arrow-repeat.svg" />
+                                <span class=""><small>0</small></span>
+                            </div>
+                        </span>
                     </div>
-                    <div class="col">
+                    <div class="col input-group">
                         <input name="hmiTrialDays" value="40" type="number" class="form-control rounded-3 border-2"
                             id="hmiTrialDays">
+                        <span class="license-info input-group-text px-1 d-none" id="" style="padding-top: 10px; padding-bottom: 10px;">
+                            <div class="">
+                                <img src="./assets/icons/clock.svg" />
+                                <span><small>0</small></span>
+                            </div>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -339,9 +425,15 @@ if (!isset($_SESSION['current_user'])) {
                 <div class="mt-3 mb-3"
                     style="border-bottom: 1px solid var(--bs-secondary); border-width: 1px;  opacity: 0.2;">
                 </div>
-                <button type="submit" class="btn btn-primary rounded-3 mt-2 mt-lg-4">
-                    <span id="fileDownloadText">Generate & Download License File</span>
-                </button>
+                <div class="d-flex gap-2 justify-content-end">
+                    <button id="cancelFormBtn" type="button" disabled class="btn btn-danger rounded-3 mt-2 mt-lg-4">
+                        <span id="">Cancel</span>
+                    </button>
+                    <button type="submit" class="btn btn-primary rounded-3 mt-2 mt-lg-4">
+                        <span id="fileDownloadText">Generate & Download License File</span>
+                    </button>
+
+                </div>
             </div>
         </form>
 

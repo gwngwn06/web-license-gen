@@ -2,6 +2,54 @@ const GlobalParams = {
     resellerId: -1,
 }
 
+const GlobalFunctions = {
+    showLicenseTags() {
+        const licenseTagInfo = document.getElementById("licenseTagInfo");
+        licenseTagInfo.classList.remove("d-none");
+
+        const licenseInfos = document.querySelectorAll(".license-info");
+        licenseInfos.forEach((span) => {
+            span.classList.remove("d-none");
+        });
+
+    },
+    hideLicenseTags() {
+        const licenseTagInfo = document.getElementById("licenseTagInfo");
+        licenseTagInfo.classList.add("d-none");
+
+        const licenseInfos = document.querySelectorAll(".license-info");
+        licenseInfos.forEach((span) => {
+            span.classList.add("d-none");
+        });
+    },
+
+    togglePermanentLicenseField(mdcPermanentCount, dncPermanentCount, hmiPermanentCount) {
+        const utypeDiv = document.getElementById("utype");
+        const utype = utypeDiv.getAttribute('data-utype');
+        if ((mdcPermanentCount != 0 || dncPermanentCount != 0 || hmiPermanentCount != 0) || utype == "1") {
+            const mdcPermanentCount = document.getElementById('mdcPermanentCount');
+            const dncPermanentCount = document.getElementById('dncPermanentCount');
+            const hmiPermanentCount = document.getElementById('hmiPermanentCount');
+            document.querySelectorAll('.permanent-license').forEach(function (element) {
+                element.classList.remove('d-none');
+            });
+            if (utype == "0") {
+                mdcPermanentCount.disabled = true;
+                dncPermanentCount.disabled = true;
+                hmiPermanentCount.disabled = true;
+            } else {
+                mdcPermanentCount.disabled = false;
+                dncPermanentCount.disabled = false;
+                hmiPermanentCount.disabled = false;
+            }
+        } else {
+            document.querySelectorAll('.permanent-license').forEach(function (element) {
+                element.classList.add('d-none');
+            });
+        }
+    }
+}
+
 const LicenseGenerator = {
     _enc: new TextEncoder(),
     _secretkey: "mySecretKey",
@@ -9,9 +57,72 @@ const LicenseGenerator = {
 
     init() {
         this.onSubmitFormEvent();
+        this.onCancelSubmitFormEvent();
         this.onLicenseUploadEvent();
         this.numberValidationEvent();
     },
+
+    onCancelSubmitFormEvent() {
+        const form = document.getElementById("generateLicenseForm")
+        const cancelFormBtn = document.getElementById("cancelFormBtn");
+
+        const checkForm = () => {
+            if (!this.isFormEmpty(form)) {
+                cancelFormBtn.disabled = false;
+            } else {
+                cancelFormBtn.disabled = true;
+            }
+        };
+
+        [...form.elements].forEach((el) => {
+            if (
+                el.tagName !== "BUTTON" &&
+                el.type !== "submit" &&
+                el.type !== "hidden" &&
+                !el.disabled
+            ) {
+                el.addEventListener("input", checkForm);
+            }
+        });
+
+        cancelFormBtn.addEventListener("click", () => {
+            form.reset();
+            document.getElementById("fileDownloadText").textContent = "Generate & Download License File";
+
+            GlobalFunctions.hideLicenseTags();
+            cancelFormBtn.disabled = true;
+        });
+    },
+
+    isFormEmpty(form) {
+        const elements = form.elements;
+        const licensesNames =
+        {
+            "mdcPermanentCount": "0", "mdcTrialCount": "0", "mdcTrialDays": "40",
+            "dncPermanentCount": "0", "dncTrialCount": "0", "dncTrialDays": "40",
+            "hmiPermanentCount": "0", "hmiTrialCount": "0", "hmiTrialDays": "40"
+        };
+
+        for (let i = 0; i < elements.length; i++) {
+            const el = elements[i];
+
+            if (
+                el.disabled ||
+                el.type === 'button' ||
+                el.type === 'submit' ||
+                el.type === 'hidden'
+            ) continue;
+
+            if (licensesNames[el.name] && (licensesNames[el.name] != el.value)) {
+                return false;
+            } else if (el.value && el.value.trim() !== "" && !licensesNames[el.name]) {
+                return false;
+            }
+        }
+
+        return true; // All relevant fields are empty
+    },
+
 
     onSubmitFormEvent() {
         let data = null;
@@ -28,8 +139,7 @@ const LicenseGenerator = {
             // formData.append("annualMaintenanceExpDate", this._annualMaintenanceExpDate);
 
             data = Object.fromEntries(formData.entries());
-            console.log(JSON.stringify(data));
-
+            // console.log(JSON.stringify(data));
 
             fetch("./licenses/license.php", {
                 method: "POST",
@@ -45,7 +155,7 @@ const LicenseGenerator = {
                 })
                 .then((result) => {
                     // NOTE: PREFER BACKEND ENCRYPTION / DECRYPTION
-                    console.log("License file saved successfully:", result);
+                    // console.log("License file saved successfully:", result);
                     const license = result.license;
                     data["licenseId"] = license.id;
                     data["licenseCreatedAt"] = license.createdAt;
@@ -79,11 +189,14 @@ const LicenseGenerator = {
                             //     "keyLength": 256
                             // }
                         }
-                        console.log("download unencryptedData: ", unencryptedData);
-                        console.log("download encryptedData:", encryptedData);
-                        this._downloadJSONLicenseFile(unencryptedData, "UNENCRYPTED_" + companyName, license.createdAt);
+                        // console.log("download unencryptedData: ", unencryptedData);
+                        // console.log("download encryptedData:", encryptedData);
+                        // this._downloadJSONLicenseFile(unencryptedData, "UNENCRYPTED_" + companyName, license.createdAt);
                         this._downloadJSONLicenseFile(encryptedData, companyName, license.createdAt);
                         form.reset();
+
+                        // hide license info
+                        GlobalFunctions.hideLicenseTags();
 
                         if (license.isUpdated) {
                             this._showToastMessage("Your license file has been updated.", "info");
@@ -141,22 +254,24 @@ const LicenseGenerator = {
                             throw new Error("Missing file data");
                         }
 
-                        if((decryptedData.licenseId == null || decryptedData.licenseId === undefined || decryptedData.licenseId === '') &&
+                        if ((decryptedData.licenseId == null || decryptedData.licenseId === undefined || decryptedData.licenseId === '')
+                            &&
                             (decryptedData.dateLicenseUsed === undefined || decryptedData.dateLicenseUsed === null ||
-                             decryptedData.dateLicenseUsed == '' || isNaN(new Date(decryptedData.dateLicenseUsed).getTime()))) {
+                                decryptedData.dateLicenseUsed == '' || isNaN(new Date(decryptedData.dateLicenseUsed).getTime()))) {
                             throw new Error("Missing file data");
                         }
 
                         if (decryptedData.licenseId) {
                             // Existing license ID found in the license file
-                            console.log("Existing license");
+                            // console.log("Existing license");
                             try {
-                                const params = new URLSearchParams({ id: decryptedData.licenseId}).toString();
+                                const params = new URLSearchParams({ id: decryptedData.licenseId }).toString();
                                 const resp = await fetch(`./licenses/license.php?${params}`)
                                 const result = await resp.json();
                                 if (result.error) throw new Error(result.error)
 
                                 document.getElementById("userId").value = result.userId;
+                                document.getElementById("cancelFormBtn").disabled = false;
 
                             } catch (err) {
                                 this._showToastMessage(err.message, "error")
@@ -167,37 +282,51 @@ const LicenseGenerator = {
                             // New file generated from the desktop app
                         }
 
-                        const utypeDiv = document.getElementById("utype");
-                        const utype = utypeDiv.getAttribute('data-utype');
-                        if ((decryptedData['mdcPermanentCount'] != 0 || decryptedData['dncPermanentCount'] != 0 || decryptedData['hmiPermanentCount'] != 0) || utype == "1") {
-                            const mdcPermanentCount = document.getElementById('mdcPermanentCount');
-                            const dncPermanentCount = document.getElementById('dncPermanentCount');
-                            const hmiPermanentCount = document.getElementById('hmiPermanentCount');
-                            document.querySelectorAll('.permanent-license').forEach(function (element) {
-                                element.classList.remove('d-none');
-                            });
-                            if (utype == "0") {
-                                mdcPermanentCount.disabled = true;
-                                dncPermanentCount.disabled = true;
-                                hmiPermanentCount.disabled = true;
-                            } else {
-                                mdcPermanentCount.disabled = false;
-                                dncPermanentCount.disabled = false;
-                                hmiPermanentCount.disabled = false;
-                            }
-                        } else {
-                            document.querySelectorAll('.permanent-license').forEach(function (element) {
-                                element.classList.add('d-none');
-                            });
-                        }
+                        // show/hide and enable/disable permanent license field base on user type
+                        GlobalFunctions.togglePermanentLicenseField(
+                            decryptedData['mdcPermanentCount'], decryptedData['dncPermanentCount'], decryptedData['hmiPermanentCount']
+                        );
+                        // const utypeDiv = document.getElementById("utype");
+                        // const utype = utypeDiv.getAttribute('data-utype');
+                        // if ((decryptedData['mdcPermanentCount'] != 0 || decryptedData['dncPermanentCount'] != 0 || decryptedData['hmiPermanentCount'] != 0) || utype == "1") {
+                        //     const mdcPermanentCount = document.getElementById('mdcPermanentCount');
+                        //     const dncPermanentCount = document.getElementById('dncPermanentCount');
+                        //     const hmiPermanentCount = document.getElementById('hmiPermanentCount');
+                        //     document.querySelectorAll('.permanent-license').forEach(function (element) {
+                        //         element.classList.remove('d-none');
+                        //     });
+                        //     if (utype == "0") {
+                        //         mdcPermanentCount.disabled = true;
+                        //         dncPermanentCount.disabled = true;
+                        //         hmiPermanentCount.disabled = true;
+                        //     } else {
+                        //         mdcPermanentCount.disabled = false;
+                        //         dncPermanentCount.disabled = false;
+                        //         hmiPermanentCount.disabled = false;
+                        //     }
+                        // } else {
+                        //     document.querySelectorAll('.permanent-license').forEach(function (element) {
+                        //         element.classList.add('d-none');
+                        //     });
+                        // }
 
+                        // put values to input fields
                         const generateLicenseForm = document.getElementById("generateLicenseForm");
                         for (const [key, value] of Object.entries(decryptedData)) {
                             const input = generateLicenseForm.querySelector(`input[name="${key}"]`);
                             if (input) {
                                 input.value = value;
+
+                                if (input.name.includes("PermanentCount") || input.name.includes("TrialCount")) {
+                                    // console.log(decryptedData["mdcPermanentAvailable"]);
+                                    // console.log(input.nextElementSibling)
+                                } else if (input.name.includes("TrialDays")) {
+                                    // console.log("Trial days: ", input.name)
+                                }
                             }
                         }
+
+                        GlobalFunctions.showLicenseTags();
 
                         this._showToastMessage(null, "success");
                         document.getElementById("fileDownloadText").textContent = "Update License File";
@@ -449,7 +578,7 @@ const SearchLicense = {
         fetch(`./licenses/license.php?${params}`)
             .then(res => res.json())
             .then(data => {
-                console.log("Search results:", data);
+                // console.log("Search results:", data);
 
                 this._params.totalPage = data.metadata.totalPage;
                 this._params.currentPage = data.metadata.currentPage;
@@ -495,27 +624,30 @@ const SearchLicense = {
 
                     viewButton.addEventListener("click", () => {
 
-                        if (item['mdc_permanent_count'] != 0 || item['dnc_permanent_count'] != 0 || item['hmi_permanent_count'] != 0) {
-                            const mdcPermanentCount = document.getElementById('mdcPermanentCount');
-                            const dncPermanentCount = document.getElementById('dncPermanentCount');
-                            const hmiPermanentCount = document.getElementById('hmiPermanentCount');
-                            document.querySelectorAll('.permanent-license').forEach(function (element) {
-                                element.classList.remove('d-none');
-                            });
-                            if (utype == "0") {
-                                mdcPermanentCount.disabled = true;
-                                dncPermanentCount.disabled = true;
-                                hmiPermanentCount.disabled = true;
-                            } else {
-                                mdcPermanentCount.disabled = false;
-                                dncPermanentCount.disabled = false;
-                                hmiPermanentCount.disabled = false;
-                            }
-                        } else if (utype == '0') {
-                            document.querySelectorAll('.permanent-license').forEach(function (element) {
-                                element.classList.add('d-none');
-                            });
-                        }
+                        GlobalFunctions.togglePermanentLicenseField(
+                            item['mdc_permanent_count'], item['dnc_permanent_count'], item['hmi_permanent_count']
+                        );
+                        // if (item['mdc_permanent_count'] != 0 || item['dnc_permanent_count'] != 0 || item['hmi_permanent_count'] != 0) {
+                        //     const mdcPermanentCount = document.getElementById('mdcPermanentCount');
+                        //     const dncPermanentCount = document.getElementById('dncPermanentCount');
+                        //     const hmiPermanentCount = document.getElementById('hmiPermanentCount');
+                        //     document.querySelectorAll('.permanent-license').forEach(function (element) {
+                        //         element.classList.remove('d-none');
+                        //     });
+                        //     if (utype == "0") {
+                        //         mdcPermanentCount.disabled = true;
+                        //         dncPermanentCount.disabled = true;
+                        //         hmiPermanentCount.disabled = true;
+                        //     } else {
+                        //         mdcPermanentCount.disabled = false;
+                        //         dncPermanentCount.disabled = false;
+                        //         hmiPermanentCount.disabled = false;
+                        //     }
+                        // } else if (utype == '0') {
+                        //     document.querySelectorAll('.permanent-license').forEach(function (element) {
+                        //         element.classList.add('d-none');
+                        //     });
+                        // }
 
                         for (const [key, value] of Object.entries(item)) {
                             let camelCaseKey = snakeToCamel(key);
@@ -527,12 +659,16 @@ const SearchLicense = {
                             const input = generateLicenseForm.querySelector(`input[name="${camelCaseKey}"]`);
                             if (input) {
                                 input.value = value;
-
                                 document.getElementById("fileDownloadText").textContent = "Update License File";
                             }
                         }
                         GlobalParams.resellerId = item.reseller_id;
+                        document.getElementById("cancelFormBtn").disabled = false;
+                        GlobalFunctions.showLicenseTags();
+
                     });
+
+
                     tableBody.appendChild(row);
                 });
             })
@@ -646,12 +782,12 @@ const SearchInputDropdown = {
     },
 
     async searchResellers(query, dataSearch, dropdown) {
-        console.log(GlobalParams.resellerId);
+        // console.log(GlobalParams.resellerId);
         try {
             const params = new URLSearchParams({ action: "searchDropdown", query, dataSearch, resellerId: GlobalParams.resellerId }).toString();
             const resp = await fetch(`./licenses/license.php?${params}`);
             const result = await resp.json();
-            console.log(result);
+            // console.log(result);
             if (!result.success || !result.result) return;
 
             this._searchList = result.result;
@@ -670,7 +806,7 @@ const SearchInputDropdown = {
 
     onInputSearchEvent() {
         const searchData = (query, dataSearch, dropdown) => {
-            console.log("search: ", query);
+            // console.log("search: ", query);
             this.searchResellers(query, dataSearch, dropdown);
         }
         const debounce = (callback, waitTime) => {

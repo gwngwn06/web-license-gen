@@ -1,9 +1,11 @@
 <?php
+require_once '../utils/constants.php';
+
 session_start();
 $currentUser = $_SESSION['current_user'] ?? null;
 
 if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($currentUser)) {
-    $conn = new mysqli("localhost", "root", "", "testdb");
+    $conn = new mysqli("localhost", "root", "", DB_NAME);
     if ($conn->connect_error) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to save license. Please try again later.']);
