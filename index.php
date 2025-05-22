@@ -128,7 +128,7 @@ if (!isset($_SESSION['current_user'])) {
                 position-absolute start-50 translate-middle-x 
                 d-none d-md-block" style="color: #0071BC">License Generator</div>
             <div>
-                <input type="file" accept=".json" id="licenseUpload" class="d-none">
+                <input type="file" accept=".dat" id="licenseUpload" class="d-none">
                 <label for="licenseUpload" class="btn btn-sm btn-outline-success rounded-3">
                     Import existing license
                 </label>
@@ -314,11 +314,11 @@ if (!isset($_SESSION['current_user'])) {
                         <span class="license-info input-group-text d-flex flex-column px-1 py-0 d-none" id="">
                             <div class="">
                                 <img src="./assets/icons/check.svg" />
-                                <span><small>0</small></span>
+                                <span class="available-license"><small>0</small></span>
                             </div>
                             <div class="">
                                 <img src="./assets/icons/arrow-repeat.svg" />
-                                <span class=""><small>0</small></span>
+                                <span class="in-use-license"><small>0</small></span>
                             </div>
                         </span>
                     </div>
@@ -328,7 +328,7 @@ if (!isset($_SESSION['current_user'])) {
                         <span class="license-info input-group-text px-1 d-none" id="" style="padding-top: 10px; padding-bottom: 10px;">
                             <div class="">
                                 <img src="./assets/icons/clock.svg" />
-                                <span><small>0</small></span>
+                                <span class="remaining-days"><small>0</small></span>
                             </div>
                         </span>
                     </div>
@@ -343,11 +343,11 @@ if (!isset($_SESSION['current_user'])) {
                         <span class="license-info input-group-text d-flex flex-column px-1 py-0 d-none" id="">
                             <div class="">
                                 <img src="./assets/icons/check.svg" />
-                                <span><small>0</small></span>
+                                <span class="available-license"><small>0</small></span>
                             </div>
                             <div class="">
                                 <img src="./assets/icons/arrow-repeat.svg" />
-                                <span class=""><small>0</small></span>
+                                <span class="in-use-license"><small>0</small></span>
                             </div>
                         </span>
                     </div>
@@ -357,11 +357,11 @@ if (!isset($_SESSION['current_user'])) {
                         <span class="license-info input-group-text d-flex flex-column px-1 py-0 d-none" id="">
                             <div class="">
                                 <img src="./assets/icons/check.svg" />
-                                <span><small>0</small></span>
+                                <span class="available-license"><small>0</small></span>
                             </div>
                             <div class="">
                                 <img src="./assets/icons/arrow-repeat.svg" />
-                                <span class=""><small>0</small></span>
+                                <span class="in-use-license"><small>0</small></span>
                             </div>
                         </span>
                     </div>
@@ -371,7 +371,7 @@ if (!isset($_SESSION['current_user'])) {
                         <span class="license-info input-group-text px-1 d-none" id="" style="padding-top: 10px; padding-bottom: 10px;">
                             <div class="">
                                 <img src="./assets/icons/clock.svg" />
-                                <span><small>0</small></span>
+                                <span class="remaining-days"><small>0</small></span>
                             </div>
                         </span>
                     </div>
@@ -386,11 +386,11 @@ if (!isset($_SESSION['current_user'])) {
                         <span class="license-info input-group-text d-flex flex-column px-1 py-0 d-none" id="">
                             <div class="">
                                 <img src="./assets/icons/check.svg" />
-                                <span><small>0</small></span>
+                                <span class="available-license"><small>0</small></span>
                             </div>
                             <div class="">
                                 <img src="./assets/icons/arrow-repeat.svg" />
-                                <span class=""><small>0</small></span>
+                                <span class="in-use-license"><small>0</small></span>
                             </div>
                         </span>
                     </div>
@@ -400,11 +400,11 @@ if (!isset($_SESSION['current_user'])) {
                         <span class="license-info input-group-text d-flex flex-column px-1 py-0 d-none" id="">
                             <div class="">
                                 <img src="./assets/icons/check.svg" />
-                                <span><small>0</small></span>
+                                <span class="available-license"><small>0</small></span>
                             </div>
                             <div class="">
                                 <img src="./assets/icons/arrow-repeat.svg" />
-                                <span class=""><small>0</small></span>
+                                <span class="in-use-license"><small>0</small></span>
                             </div>
                         </span>
                     </div>
@@ -414,7 +414,7 @@ if (!isset($_SESSION['current_user'])) {
                         <span class="license-info input-group-text px-1 d-none" id="" style="padding-top: 10px; padding-bottom: 10px;">
                             <div class="">
                                 <img src="./assets/icons/clock.svg" />
-                                <span><small>0</small></span>
+                                <span class="remaining-days"><small>0</small></span>
                             </div>
                         </span>
                     </div>
@@ -428,6 +428,9 @@ if (!isset($_SESSION['current_user'])) {
                 <div class="d-flex gap-2 justify-content-end">
                     <button id="cancelFormBtn" type="button" disabled class="btn btn-danger rounded-3 mt-2 mt-lg-4">
                         <span id="">Cancel</span>
+                    </button>
+                    <button id="undoFormBtn" type="button" disabled class="btn btn-warning rounded-3 mt-2 mt-lg-4">
+                        <span class="" id="">Undo</span>
                     </button>
                     <button type="submit" class="btn btn-primary rounded-3 mt-2 mt-lg-4">
                         <span id="fileDownloadText">Generate & Download License File</span>

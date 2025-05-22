@@ -1,5 +1,6 @@
 const GlobalParams = {
     resellerId: -1,
+    selectedLicense: {}
 }
 
 const GlobalFunctions = {
@@ -13,6 +14,34 @@ const GlobalFunctions = {
         });
 
     },
+
+    // updateLicenseTagsInfo(input) {
+    //     if (input.name.includes("PermanentCount") || input.name.includes("TrialCount")) {
+    //         const span = input.nextElementSibling;
+    //         const availableLicense = span.querySelector(".available-license");
+    //         const inUseLicense = span.querySelector(".in-use-license");
+    //         const availableLicenseText = input.name.replace("Count", "Available");
+    //         const inUsedLicenseText = input.name.replace("Count", "InUsed");
+
+    //         availableLicense.innerHTML = `<small>${data[availableLicenseText] ?? value}</small>`;
+    //         inUseLicense.innerHTML = `<small>${data[inUsedLicenseText] ?? 0}</small>`
+
+    //     } else if (input.name.includes("TrialDays")) {
+    //         // console.log("Trial days: ", input.nextElementSibling)
+    //         const span = input.nextElementSibling;
+    //         const remainingDays = span.querySelector(".remaining-days");
+    //         if (!isNaN(new Date(data.dateLicenseUsed).getTime())) {
+    //             const diffTime = Math.abs(Date.now() - new Date(data.dateLicenseUsed));
+    //             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    //             const days = Math.max(value - diffDays, 0);
+
+    //             remainingDays.innerHTML = `<small>${days}</small>`;
+    //         } else {
+    //             remainingDays.innerHTML = `<small>${value}</small>`;
+    //         }
+    //     }
+    // },
+
     hideLicenseTags() {
         const licenseTagInfo = document.getElementById("licenseTagInfo");
         licenseTagInfo.classList.add("d-none");
@@ -58,8 +87,30 @@ const LicenseGenerator = {
     init() {
         this.onSubmitFormEvent();
         this.onCancelSubmitFormEvent();
+        this.onUndoClickEvent();
         this.onLicenseUploadEvent();
         this.numberValidationEvent();
+    },
+
+    onUndoClickEvent() {
+        const undoFormBtn = document.getElementById("undoFormBtn");
+        undoFormBtn.addEventListener("click", () => {
+            document.getElementById("cancelFormBtn").disabled = false;
+            document.getElementById("fileDownloadText").textContent = "Update License File";
+            // put values to input fields
+            const generateLicenseForm = document.getElementById("generateLicenseForm");
+            for (const [key, value] of Object.entries(GlobalParams.selectedLicense)) {
+                const input = generateLicenseForm.querySelector(`input[name="${key}"]`);
+                if (input) {
+                    input.value = value;
+                }
+            }
+            GlobalFunctions.togglePermanentLicenseField(
+                GlobalParams.selectedLicense.mdcPermanentCount,
+                GlobalParams.selectedLicense.dncPermanentCount,
+                GlobalParams.selectedLicense.hmiPermanentCount);
+            GlobalFunctions.showLicenseTags();
+        });
     },
 
     onCancelSubmitFormEvent() {
@@ -89,9 +140,19 @@ const LicenseGenerator = {
             form.reset();
             document.getElementById("fileDownloadText").textContent = "Generate & Download License File";
 
+            // make sure we are using the current user id when we reset
+            this.resetToCurrentUserId();
+
             GlobalFunctions.hideLicenseTags();
+            GlobalFunctions.togglePermanentLicenseField(0, 0, 0);
             cancelFormBtn.disabled = true;
         });
+    },
+
+    resetToCurrentUserId() {
+        const cid = document.getElementById("cid");
+        const cidData = cid.getAttribute("data-cid");
+        document.getElementById("userId").value = cidData;
     },
 
     isFormEmpty(form) {
@@ -171,32 +232,18 @@ const LicenseGenerator = {
                             data: btoa(String.fromCharCode(...savedCiphertext)),
                             iv: btoa(String.fromCharCode(...iv)),
                             salt: btoa(String.fromCharCode(...salt)),
-                            // "kdf": {
-                            //     "name": "PBKDF2",
-                            //     "iterations": 100000,
-                            //     "hash": "SHA-256",
-                            //     "keyLength": 256
-                            // }
+
                         };
-                        const unencryptedData = {
-                            data,
-                            iv: null,
-                            salt: null,
-                            // "kdf": {
-                            //     "name": "PBKDF2",
-                            //     "iterations": 100000,
-                            //     "hash": "SHA-256",
-                            //     "keyLength": 256
-                            // }
-                        }
+                        // const unencryptedData = {
+                        //     data,
+                        //     iv: null,
+                        //     salt: null,
+                        // }
                         // console.log("download unencryptedData: ", unencryptedData);
                         // console.log("download encryptedData:", encryptedData);
                         // this._downloadJSONLicenseFile(unencryptedData, "UNENCRYPTED_" + companyName, license.createdAt);
                         this._downloadJSONLicenseFile(encryptedData, companyName, license.createdAt);
-                        form.reset();
 
-                        // hide license info
-                        GlobalFunctions.hideLicenseTags();
 
                         if (license.isUpdated) {
                             this._showToastMessage("Your license file has been updated.", "info");
@@ -204,6 +251,9 @@ const LicenseGenerator = {
                             this._showToastMessage("Your license has been generated.", "info");
                         }
 
+                        form.reset();
+                        GlobalFunctions.hideLicenseTags();
+                        this.resetToCurrentUserId();
                         document.getElementById("fileDownloadText").textContent = "Generate & Download License File";
                         data = companyName = null;
                     }).catch((error) => {
@@ -262,7 +312,6 @@ const LicenseGenerator = {
                         }
 
                         if (decryptedData.licenseId) {
-                            // Existing license ID found in the license file
                             // console.log("Existing license");
                             try {
                                 const params = new URLSearchParams({ id: decryptedData.licenseId }).toString();
@@ -272,43 +321,25 @@ const LicenseGenerator = {
 
                                 document.getElementById("userId").value = result.userId;
                                 document.getElementById("cancelFormBtn").disabled = false;
+                                document.getElementById("undoFormBtn").disabled = false;
+                                GlobalParams.selectedLicense = { ...decryptedData, userId: result.userId };
 
                             } catch (err) {
                                 this._showToastMessage(err.message, "error")
                                 return;
                             }
                         } else {
-                            console.log("Newly generated license from desktop app");
                             // New file generated from the desktop app
+                            console.log("Newly generated license from desktop app");
                         }
 
                         // show/hide and enable/disable permanent license field base on user type
                         GlobalFunctions.togglePermanentLicenseField(
-                            decryptedData['mdcPermanentCount'], decryptedData['dncPermanentCount'], decryptedData['hmiPermanentCount']
+                            decryptedData['mdcPermanentCount'],
+                            decryptedData['dncPermanentCount'],
+                            decryptedData['hmiPermanentCount']
                         );
-                        // const utypeDiv = document.getElementById("utype");
-                        // const utype = utypeDiv.getAttribute('data-utype');
-                        // if ((decryptedData['mdcPermanentCount'] != 0 || decryptedData['dncPermanentCount'] != 0 || decryptedData['hmiPermanentCount'] != 0) || utype == "1") {
-                        //     const mdcPermanentCount = document.getElementById('mdcPermanentCount');
-                        //     const dncPermanentCount = document.getElementById('dncPermanentCount');
-                        //     const hmiPermanentCount = document.getElementById('hmiPermanentCount');
-                        //     document.querySelectorAll('.permanent-license').forEach(function (element) {
-                        //         element.classList.remove('d-none');
-                        //     });
-                        //     if (utype == "0") {
-                        //         mdcPermanentCount.disabled = true;
-                        //         dncPermanentCount.disabled = true;
-                        //         hmiPermanentCount.disabled = true;
-                        //     } else {
-                        //         mdcPermanentCount.disabled = false;
-                        //         dncPermanentCount.disabled = false;
-                        //         hmiPermanentCount.disabled = false;
-                        //     }
-                        // } else {
-                        //     document.querySelectorAll('.permanent-license').forEach(function (element) {
-                        //         element.classList.add('d-none');
-                        //     });
-                        // }
+
 
                         // put values to input fields
                         const generateLicenseForm = document.getElementById("generateLicenseForm");
@@ -317,11 +348,30 @@ const LicenseGenerator = {
                             if (input) {
                                 input.value = value;
 
+                                // m2
                                 if (input.name.includes("PermanentCount") || input.name.includes("TrialCount")) {
-                                    // console.log(decryptedData["mdcPermanentAvailable"]);
-                                    // console.log(input.nextElementSibling)
+                                    const span = input.nextElementSibling;
+                                    const availableLicense = span.querySelector(".available-license");
+                                    const inUseLicense = span.querySelector(".in-use-license");
+                                    const availableLicenseText = input.name.replace("Count", "Available");
+                                    const inUsedLicenseText = input.name.replace("Count", "InUsed");
+
+                                    availableLicense.innerHTML = `<small>${decryptedData[availableLicenseText] ?? value}</small>`;
+                                    inUseLicense.innerHTML = `<small>${decryptedData[inUsedLicenseText] ?? 0}</small>`
+
                                 } else if (input.name.includes("TrialDays")) {
-                                    // console.log("Trial days: ", input.name)
+                                    // console.log("Trial days: ", input.nextElementSibling)
+                                    const span = input.nextElementSibling;
+                                    const remainingDays = span.querySelector(".remaining-days");
+                                    if (decryptedData.dateLicenseUsed != null && !isNaN(new Date(decryptedData.dateLicenseUsed).getTime())) {
+                                        const diffTime = Math.abs(Date.now() - new Date(decryptedData.dateLicenseUsed));
+                                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                        const days = Math.max(value - diffDays, 0);
+
+                                        remainingDays.innerHTML = `<small>${days}</small>`;
+                                    } else {
+                                        remainingDays.innerHTML = `<small>${value}</small>`;
+                                    }
                                 }
                             }
                         }
@@ -392,7 +442,7 @@ const LicenseGenerator = {
     },
 
     _downloadJSONLicenseFile(data, companyName, initialIssuedDate) {
-        const fileName = companyName + "_" + initialIssuedDate + "_" + "License.json";
+        const fileName = companyName + "_" + initialIssuedDate + "_" + "License.dat";
         const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -625,45 +675,46 @@ const SearchLicense = {
                     viewButton.addEventListener("click", () => {
 
                         GlobalFunctions.togglePermanentLicenseField(
-                            item['mdc_permanent_count'], item['dnc_permanent_count'], item['hmi_permanent_count']
+                            item['mdc_permanent_count'], 
+                            item['dnc_permanent_count'], 
+                            item['hmi_permanent_count']
                         );
-                        // if (item['mdc_permanent_count'] != 0 || item['dnc_permanent_count'] != 0 || item['hmi_permanent_count'] != 0) {
-                        //     const mdcPermanentCount = document.getElementById('mdcPermanentCount');
-                        //     const dncPermanentCount = document.getElementById('dncPermanentCount');
-                        //     const hmiPermanentCount = document.getElementById('hmiPermanentCount');
-                        //     document.querySelectorAll('.permanent-license').forEach(function (element) {
-                        //         element.classList.remove('d-none');
-                        //     });
-                        //     if (utype == "0") {
-                        //         mdcPermanentCount.disabled = true;
-                        //         dncPermanentCount.disabled = true;
-                        //         hmiPermanentCount.disabled = true;
-                        //     } else {
-                        //         mdcPermanentCount.disabled = false;
-                        //         dncPermanentCount.disabled = false;
-                        //         hmiPermanentCount.disabled = false;
-                        //     }
-                        // } else if (utype == '0') {
-                        //     document.querySelectorAll('.permanent-license').forEach(function (element) {
-                        //         element.classList.add('d-none');
-                        //     });
-                        // }
 
+                        console.log('item', item);
+                        GlobalParams.selectedLicense = {};
                         for (const [key, value] of Object.entries(item)) {
                             let camelCaseKey = snakeToCamel(key);
-                            // console.log(camelCaseKey);
                             // if (camelCaseKey == "userId") continue;
                             if (camelCaseKey == "id") camelCaseKey = "licenseId";
                             if (camelCaseKey == "serviceLicenseUpdatedAt") camelCaseKey = "dateLicenseUsed";
+
+                            GlobalParams.selectedLicense[camelCaseKey] = value;
 
                             const input = generateLicenseForm.querySelector(`input[name="${camelCaseKey}"]`);
                             if (input) {
                                 input.value = value;
                                 document.getElementById("fileDownloadText").textContent = "Update License File";
+
+                                // m1
+                                if (input.name.includes("TrialDays")) {
+                                    const span = input.nextElementSibling;
+                                    const remainingDays = span.querySelector(".remaining-days");
+                                    if (item["service_license_updated_at"] != null && !isNaN(new Date(item["service_license_updated_at"]).getTime())) {
+                                        const diffTime = Math.abs(Date.now() - new Date(item["service_license_updated_at"]));
+                                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                        const days = Math.max(value - diffDays, 0);
+
+                                        remainingDays.innerHTML = `<small>${days}</small>`;
+                                    } else {
+                                        remainingDays.innerHTML = `<small>${value}</small>`;
+                                    }
+                                }
                             }
                         }
+                        // console.log(GlobalParams.selectedLicense);
                         GlobalParams.resellerId = item.reseller_id;
                         document.getElementById("cancelFormBtn").disabled = false;
+                        document.getElementById("undoFormBtn").disabled = false;
                         GlobalFunctions.showLicenseTags();
 
                     });
@@ -724,19 +775,19 @@ const UserProfile = {
                     badgeElement = "<span class='badge text-bg-success'>Reseller</span>";
                     resellerInfo = `
                     <div class="row">
-                     <div class="col-4 text-secondary">Reseller</div>
+                     <div class="col-4 text-secondary"><img src='./assets/icons/person-card.svg' /> Reseller</div>
                      <div class="col-6">${user['firstName']} ${user['lastName']}</div>
                     </div>
                     <div class="row">
-                     <div class="col-4 text-secondary">Company</div>
+                     <div class="col-4 text-secondary"><img src='./assets/icons/company.svg' /> Company</div>
                      <div class="col-6">${user['companyName']}</div>
                     </div>
                     <div class="row">
-                     <div class="col-4 text-secondary">Mobile number</div>
+                     <div class="col-4 text-secondary"><img src='./assets/icons/telephone.svg' /> Mobile number</div>
                      <div class="col-6">${user['mobileNumber']}</div>
                     </div>
                     <div class="row">
-                     <div class="col-4 text-secondary">Reseller code</div>
+                     <div class="col-4 text-secondary"><img src='./assets/icons/code.svg' /> Reseller code</div>
                      <div class="col-6">${user['resellerCode']}</div>
                     </div>
                     `;
@@ -749,15 +800,15 @@ const UserProfile = {
 
                 profileModalBody.innerHTML = `
             <div class="row">
-                <div class="col-4 text-secondary">Account</div>
+                <div class="col-4 text-secondary"><img src='./assets/icons/account.svg' /> Account</div>
                 <div class="col-6">${badgeElement}</div>
             </div>
             <div class="row">
-                <div class="col-4 text-secondary">Email</div>
+                <div class="col-4 text-secondary"><img src='./assets/icons/mail.svg' /> Email</div>
                 <div class="col-6">${user.email}</div>
             </div>
             <div class="row">
-                <div class="col-4 text-secondary">Joined</div>
+                <div class="col-4 text-secondary"><img src='./assets/icons/calendar-check.svg' /> Joined</div>
                 <div class="col-6">${joinedDate}</div>
             </div>
             ${user.accountType == "0" ? resellerInfo : ""}
