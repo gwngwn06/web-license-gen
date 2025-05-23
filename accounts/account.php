@@ -130,7 +130,7 @@ class Account
             return ["status" => "error", "message" => "All fields are required"];
         }
         if ($this->password !== $this->confirmPassword) {
-            return ["status" => "error", "message" => "Passwords do not match"];
+            return ["status" => "error", "message" => "Password & Confirm password do not match."];
         }
         if (!preg_match("/^[a-zA-Z0-9_]+$/", $this->username)) {
             return ["status" => "error", "message" => "Username can only contain letters, numbers, and underscores"];

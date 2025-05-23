@@ -144,10 +144,12 @@ if (!isset($_SESSION['current_user'])) {
         <form id="generateLicenseForm">
             <?php
             $userId = $_SESSION['current_user']['id'];
-            echo "<input id='userId' type='hidden' name='userId' value='$userId'>
-                  <input id='licenseId' type='hidden' name='licenseId' value=''>";
+            echo "<input id='userId' type='hidden' name='userId' value='$userId'> ";
             ?>
+            <input id='licenseId' type='hidden' name='licenseId' value=''>
             <input id='dateLicenseUsed' name="dateLicenseUsed" type="hidden" value="" />
+            <input id='annualMaintenanceExpirationDate' name="annualMaintenanceExpirationDate" type="hidden" value="" />
+
             <div class="">
                 <label for="codeVerifier" class="form-label text-secondary fw-medium"><span class="text-danger">*</span>
                     Verifier Code
@@ -162,7 +164,7 @@ if (!isset($_SESSION['current_user'])) {
             <div class="row">
                 <div class="mb-2 col">
                     <label for="resellerFirstName" class="form-label text-secondary fw-medium"><span
-                            class="text-danger">*</span>First name</label>
+                            class="text-danger">*</span> First name</label>
                     <!-- <div class="">
                         <input name="resellerFirstName" type="text" class="form-control rounded-3 border-2" id="resellerFirstName"
                             required>
@@ -177,7 +179,7 @@ if (!isset($_SESSION['current_user'])) {
                 </div>
                 <div class="mb-2 col">
                     <label for="resellerLastName" class="form-label text-secondary fw-medium"><span
-                            class="text-danger">*</span>Last name</label>
+                            class="text-danger">*</span> Last name</label>
                     <div class="" style="position: relative; display: flex;">
                         <input name="resellerLastName" type="text" data-search="resellers" class="select-button form-control rounded-3 border-2" id="resellerLastName"
                             required>
@@ -190,7 +192,7 @@ if (!isset($_SESSION['current_user'])) {
             <div class="row">
                 <div class="mb-2 col">
                     <label for="resellerCode" class="form-label text-secondary fw-medium">
-                        <span class="text-danger">*</span>Reseller Code</label>
+                        <span class="text-danger">*</span> Reseller Code</label>
                     <div class="">
                         <input name="resellerCode" type="text" class="form-control rounded-3 border-2" id="resellerCode"
                             required>
@@ -264,11 +266,13 @@ if (!isset($_SESSION['current_user'])) {
             <div class="my-3"
                 style="border-bottom: 1px dashed var(--bs-secondary); border-width: 3px;  opacity: 0.1;">
             </div>
-            <div class="fw-medium fs-5 mt-4 mb-2">Machine License
+            <div class="fw-medium fs-5 mt-4 mb-2 d-flex align-items-center">Machine License
                 <span class="fw-normal fs-6 ms-2 d-none" id="licenseTagInfo">
                     <code>
-                        <small>
-                            <img src='./assets/icons/check.svg' /> Available <img src='./assets/icons/arrow-repeat.svg' /> In use <img src='./assets/icons/clock.svg' /> Remaining days
+                        <small class="text-black">
+                            <img src='./assets/icons/check.svg' /> Available
+                            <img src='./assets/icons/machine.svg' /> In use
+                            <img src='./assets/icons/clock.svg' /> Remaining days
                         </small>
                     </code>
                 </span>
@@ -292,7 +296,7 @@ if (!isset($_SESSION['current_user'])) {
 
                 <div class="row mb-2 align-items-center">
                     <div class="col-2">
-                        <span class="text-danger">*</span>MDC
+                        <span class="text-danger">*</span> MDC
                     </div>
                     <div class="col permanent-license input-group">
                         <input name="mdcPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
@@ -303,7 +307,7 @@ if (!isset($_SESSION['current_user'])) {
                                 <span class="available-license"><small>0</small></span>
                             </div>
                             <div class="">
-                                <img src="./assets/icons/arrow-repeat.svg" />
+                                <img src="./assets/icons/machine.svg" />
                                 <span class="in-use-license"><small>0</small></span>
                             </div>
                         </span>
@@ -317,7 +321,7 @@ if (!isset($_SESSION['current_user'])) {
                                 <span class="available-license"><small>0</small></span>
                             </div>
                             <div class="">
-                                <img src="./assets/icons/arrow-repeat.svg" />
+                                <img src="./assets/icons/machine.svg" />
                                 <span class="in-use-license"><small>0</small></span>
                             </div>
                         </span>
@@ -325,7 +329,7 @@ if (!isset($_SESSION['current_user'])) {
                     <div class="col input-group input-group">
                         <input name="mdcTrialDays" value="40" type="number" class="form-control rounded-3 border-2"
                             id="mdcTrialDays">
-                        <span class="license-info input-group-text px-1 d-none" id="" style="padding-top: 10px; padding-bottom: 10px;">
+                        <span class="license-info trial-days-info input-group-text px-1 d-none" id="" style="padding-top: 10px; padding-bottom: 10px;">
                             <div class="">
                                 <img src="./assets/icons/clock.svg" />
                                 <span class="remaining-days"><small>0</small></span>
@@ -335,7 +339,7 @@ if (!isset($_SESSION['current_user'])) {
                 </div>
                 <div class="row mb-2 align-items-center">
                     <div class="col-2">
-                        <span class="text-danger">*</span>DNC
+                        <span class="text-danger">*</span> DNC
                     </div>
                     <div class="col permanent-license input-group">
                         <input name="dncPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
@@ -346,7 +350,7 @@ if (!isset($_SESSION['current_user'])) {
                                 <span class="available-license"><small>0</small></span>
                             </div>
                             <div class="">
-                                <img src="./assets/icons/arrow-repeat.svg" />
+                                <img src="./assets/icons/machine.svg" />
                                 <span class="in-use-license"><small>0</small></span>
                             </div>
                         </span>
@@ -360,7 +364,7 @@ if (!isset($_SESSION['current_user'])) {
                                 <span class="available-license"><small>0</small></span>
                             </div>
                             <div class="">
-                                <img src="./assets/icons/arrow-repeat.svg" />
+                                <img src="./assets/icons/machine.svg" />
                                 <span class="in-use-license"><small>0</small></span>
                             </div>
                         </span>
@@ -368,7 +372,7 @@ if (!isset($_SESSION['current_user'])) {
                     <div class="col input-group">
                         <input name="dncTrialDays" value="40" type="number" class="form-control rounded-3 border-2"
                             id="dncTrialDays" required>
-                        <span class="license-info input-group-text px-1 d-none" id="" style="padding-top: 10px; padding-bottom: 10px;">
+                        <span class="license-info trial-days-info input-group-text px-1 d-none" id="" style="padding-top: 10px; padding-bottom: 10px;">
                             <div class="">
                                 <img src="./assets/icons/clock.svg" />
                                 <span class="remaining-days"><small>0</small></span>
@@ -378,7 +382,7 @@ if (!isset($_SESSION['current_user'])) {
                 </div>
                 <div class="row mb-2 align-items-center">
                     <div class="col-2">
-                        <span class="text-danger">*</span>HMI
+                        <span class="text-danger">*</span> HMI
                     </div>
                     <div class="col permanent-license input-group">
                         <input name="hmiPermanentCount" value="0" type="number" class="form-control rounded-3 border-2"
@@ -389,7 +393,7 @@ if (!isset($_SESSION['current_user'])) {
                                 <span class="available-license"><small>0</small></span>
                             </div>
                             <div class="">
-                                <img src="./assets/icons/arrow-repeat.svg" />
+                                <img src="./assets/icons/machine.svg" />
                                 <span class="in-use-license"><small>0</small></span>
                             </div>
                         </span>
@@ -403,7 +407,7 @@ if (!isset($_SESSION['current_user'])) {
                                 <span class="available-license"><small>0</small></span>
                             </div>
                             <div class="">
-                                <img src="./assets/icons/arrow-repeat.svg" />
+                                <img src="./assets/icons/machine.svg" />
                                 <span class="in-use-license"><small>0</small></span>
                             </div>
                         </span>
@@ -411,7 +415,7 @@ if (!isset($_SESSION['current_user'])) {
                     <div class="col input-group">
                         <input name="hmiTrialDays" value="40" type="number" class="form-control rounded-3 border-2"
                             id="hmiTrialDays">
-                        <span class="license-info input-group-text px-1 d-none" id="" style="padding-top: 10px; padding-bottom: 10px;">
+                        <span class="license-info trial-days-info input-group-text px-1 d-none" id="" style="padding-top: 10px; padding-bottom: 10px;">
                             <div class="">
                                 <img src="./assets/icons/clock.svg" />
                                 <span class="remaining-days"><small>0</small></span>
@@ -420,6 +424,13 @@ if (!isset($_SESSION['current_user'])) {
                     </div>
                 </div>
             </div>
+            <div id="licenseExpirationLabel">
+                <div class="text-end fw-bold">
+                    <code id="licenseCreatedAt" class="text-black"></code><br>
+                    <code id="softwareMaintenanceExpiratedDate" class="text-black"></code>
+                </div>
+            </div>
+
 
             <div class="text-center text-lg-end mt-4">
                 <div class="mt-3 mb-3"

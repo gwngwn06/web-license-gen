@@ -7,6 +7,9 @@ header('Content-Type: application/json');
 
 function isValidDate($date)
 {
+    if (!isset($date) || empty($date)) {
+        return false;
+    }
     $parsedDate = DateTime::createFromFormat('Y-m-d H:i:s', $date);
     return $parsedDate && $parsedDate->format('Y-m-d H:i:s') === $date;
 }
@@ -89,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
     $hmiPermanentCount = $_POST['hmiPermanentCount'] ?? 0;
     $hmiTrialCount = $_POST['hmiTrialCount'] ?? 0;
     $hmiTrialDays = $_POST['hmiTrialDays'] ?? 40;
-    $annualMaintenanceExpDate = $_POST['annualMaintenanceExpDate'] ?? null;
+    $annualMaintenanceExpDate = empty($_POST['annualMaintenanceExpirationDate']) ? null : $_POST['annualMaintenanceExpirationDate'];
     $dateLicenseUsed = isValidDate($_POST['dateLicenseUsed']) ? $_POST['dateLicenseUsed'] : null;
 
     if (
@@ -116,6 +119,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
         exit;
     }
 
+
+
     $conn->begin_transaction();
     try {
         // Update License
@@ -130,6 +135,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
                 http_response_code(404);
                 echo json_encode(['error' => 'License not found']);
                 exit;
+            }
+
+            $addDateLiceseUsed = false;
+            $addAnnualMaintenanceExpirationDate = false;
+            if (!empty($dateLicenseUsed)) {
+                $validationStmt = $conn->prepare("SELECT service_license_updated_at, annual_maintenance_expiration_date FROM licenses WHERE id = ? AND user_id = ?");
+                $validationStmt->bind_param("ii", $licenseId, $userId);
+                $validationStmt->execute();
+                $result = $validationStmt->get_result();
+                $row = $result->fetch_assoc();
+
+                if ($row["service_license_updated_at"] == null) {
+                    $addDateLiceseUsed = true;
+                } else {
+                    $addDateLiceseUsed = false;
+                }
+
+                if ($row['annual_maintenance_expiration_date'] == null) {
+                    $addAnnualMaintenanceExpirationDate = true;
+                } else {
+                    $addAnnualMaintenanceExpirationDate = false;
+                }
             }
 
             // Only admin account can update the permanent count of licenses
@@ -148,14 +175,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
                     $customerId = insertCustomer($conn, $resellerId, $customerFirstname, $customerLastname, $companyName, $customerAddress, $customerContactNumber, $customerEmailAddress);
                 }
 
-                $stmt = $conn->prepare("UPDATE licenses 
+                // Base SQL and bind types
+                $sql = "UPDATE licenses 
                 SET reseller_id = ?, customer_id  = ?, code_verifier = ?,  
                 mdc_permanent_count = ?, mdc_trial_count = ?, mdc_trial_days = ?, dnc_permanent_count = ?, 
                 dnc_trial_count = ?, dnc_trial_days = ?, hmi_permanent_count = ?, hmi_trial_count = ?, 
-                hmi_trial_days = ?, annual_maintenance_expiration_date = ?, service_license_updated_at = ?
-                WHERE id = ? AND user_id = ?");
-                $stmt->bind_param(
-                    "iisiiiiiiiiissii",
+                hmi_trial_days = ?";
+
+                $types = "iisiiiiiiiii";
+                $params = [
                     $resellerId,
                     $customerId,
                     $codeVerifier,
@@ -168,11 +196,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
                     $hmiPermanentCount,
                     $hmiTrialCount,
                     $hmiTrialDays,
-                    $annualMaintenanceExpDate,
-                    $dateLicenseUsed,
-                    $licenseId,
-                    $userId
-                );
+                ];
+
+                if ($addAnnualMaintenanceExpirationDate) {
+                    $sql .= ", annual_maintenance_expiration_date = ?";
+                    $types .= "s";
+                    $params[] = $annualMaintenanceExpDate;
+                }
+
+                if ($addDateLiceseUsed) {
+                    $sql .= ", service_license_updated_at = ?";
+                    $types .= "s";
+                    $params[] = $dateLicenseUsed;
+                }
+
+                $sql .= " WHERE id = ? AND user_id = ?";
+                $types .= "ii";
+                $params[] = $licenseId;
+                $params[] = $userId;
+
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param($types, ...$params);
                 $stmt->execute();
             } else {
                 // Reseller license update
@@ -191,13 +235,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
                     $customerId = insertCustomer($conn, $resellerId, $customerFirstname, $customerLastname, $companyName, $customerAddress, $customerContactNumber, $customerEmailAddress);
                 }
 
-                $stmt = $conn->prepare("UPDATE licenses 
-                SET reseller_id = ?, customer_id  = ?, code_verifier = ?,
-                mdc_trial_count = ?, mdc_trial_days = ?, dnc_trial_count = ?, dnc_trial_days = ?,  hmi_trial_count = ?, 
-                hmi_trial_days = ?, annual_maintenance_expiration_date = ?, service_license_updated_at = ?
-                WHERE id = ? AND user_id = ?");
-                $stmt->bind_param(
-                    "iisiiiiiissii",
+                // Base SQL and bind types
+                $sql = "UPDATE licenses 
+                SET reseller_id = ?, customer_id  = ?, code_verifier = ?,  
+                mdc_trial_count = ?, mdc_trial_days = ?,  
+                dnc_trial_count = ?, dnc_trial_days = ?, 
+                hmi_trial_count = ?, hmi_trial_days = ?";
+
+                $types = "iisiiiiii";
+                $params = [
                     $resellerId,
                     $customerId,
                     $codeVerifier,
@@ -207,18 +253,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
                     $dncTrialDays,
                     $hmiTrialCount,
                     $hmiTrialDays,
-                    $annualMaintenanceExpDate,
-                    $dateLicenseUsed,
-                    $licenseId,
-                    $userId
-                );
+                ];
+
+                if ($addAnnualMaintenanceExpirationDate) {
+                    $sql .= ", annual_maintenance_expiration_date = ?";
+                    $types .= "s";
+                    $params[] = $annualMaintenanceExpDate;
+                }
+
+                if ($addDateLiceseUsed) {
+                    $sql .= ", service_license_updated_at = ?";
+                    $types .= "s";
+                    $params[] = $dateLicenseUsed;
+                }
+
+                $sql .= " WHERE id = ? AND user_id = ?";
+                $types .= "ii";
+                $params[] = $licenseId;
+                $params[] = $userId;
+
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param($types, ...$params);
                 $stmt->execute();
             }
             $lastId = $licenseId;
             $isUpdated = true;
         } else {
 
-            // Generate License
+            // Generate new license
             $resellerId = getIdByName($conn, "resellers", $resellerFirstname, $resellerLastname);
             if ($resellerId !== null) {
                 updateReseller($conn, $resellerId, $resellerCode, $technician);
