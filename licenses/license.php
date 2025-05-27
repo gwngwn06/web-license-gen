@@ -1,5 +1,5 @@
 <?php
-require_once '../utils/constants.php';
+require_once '../utils/db.php';
 
 session_start();
 header('Content-Type: application/json');
@@ -112,12 +112,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
         exit;
     }
 
-    $conn = new mysqli("localhost", "root", "", DB_NAME);
-    if ($conn->connect_error) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to save license. Please try again later.']);
-        exit;
-    }
+    // $conn = new mysqli("localhost", "root", "", DB_NAME);
+    // if ($conn->connect_error) {
+    //     http_response_code(500);
+    //     echo json_encode(['error' => 'Failed to save license. Please try again later.']);
+    //     exit;
+    // }
 
 
 
@@ -354,7 +354,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($currentUser)) {
         http_response_code(400);
         echo json_encode(['error' => 'Failed to save license. Please try again later.', 'message' => $e->getMessage()]);
     } finally {
-        $conn->close();
+        // $conn->close();
     }
 }
 
@@ -373,12 +373,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
 
         $searchQuery = trim($searchQuery);
 
-        $conn = new mysqli("localhost", "root", "", DB_NAME);
-        if ($conn->connect_error) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to save license. Please try again later.']);
-            exit;
-        }
+        // $conn = new mysqli("localhost", "root", "", DB_NAME);
+        // if ($conn->connect_error) {
+        //     http_response_code(500);
+        //     echo json_encode(['error' => 'Failed to save license. Please try again later.']);
+        //     exit;
+        // }
 
         try {
             $searchParam = '%' . $searchQuery . '%';
@@ -461,20 +461,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
             echo json_encode(['error' => 'Failed to fetch licenses. Please try again later.']);
             exit;
         } finally {
-            $stmt->close();
-            $conn->close();
+            // $stmt->close();
+            // $conn->close();
         }
     } else if (isset($_GET['id'])) {
         // check if license exists
         $licenseId = $_GET['id'];
         $userId = $currentUser['id'];
 
-        $conn = new mysqli("localhost", "root", "", DB_NAME);
-        if ($conn->connect_error) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Something went wrong. Please try again later.']);
-            exit;
-        }
+        // $conn = new mysqli("localhost", "root", "", DB_NAME);
+        // if ($conn->connect_error) {
+        //     http_response_code(500);
+        //     echo json_encode(['error' => 'Something went wrong. Please try again later.']);
+        //     exit;
+        // }
 
         try {
             if (ctype_digit($licenseId)) {
@@ -509,7 +509,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
             http_response_code(404);
             echo json_encode(['error' => 'License not found']);
         } finally {
-            $conn->close();
+            // $conn->close();
         }
     } else if (isset($_GET['action']) && $_GET['action'] == "searchDropdown") {
         $resellerId = $_GET['resellerId'] ?? '';
@@ -517,12 +517,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
         $dataSearch = in_array($_GET['dataSearch'] ?? '', ['resellers', 'customers']) ? $_GET['dataSearch'] : 'resellers';
         $searchParam = '%' . $query . '%';
 
-        $conn = new mysqli("localhost", "root", "", DB_NAME);
-        if ($conn->connect_error) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Something went wrong. Please try again later.']);
-            exit;
-        }
+        // $conn = new mysqli("localhost", "root", "", DB_NAME);
+        // if ($conn->connect_error) {
+        //     http_response_code(500);
+        //     echo json_encode(['error' => 'Something went wrong. Please try again later.']);
+        //     exit;
+        // }
 
         if ($dataSearch == "resellers") {
             $sql = "SELECT id, first_name, last_name, reseller_code, technician FROM $dataSearch WHERE (first_name LIKE ? OR last_name LIKE ?) ORDER BY first_name LIMIT 10";
@@ -547,12 +547,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($currentUser)) {
             while ($row = $result->fetch_assoc()) {
                 $rows[] = $row;
             }
-            $stmt->close();
+            // $stmt->close();
             echo json_encode(['success' => $dataSearch . ' found', 'result' => $rows]);
         } catch (Exception $e) {
             echo json_encode(['error' => $e->getMessage()]);
         } finally {
-            $conn->close();
+            // $conn->close();
         }
     }
 }

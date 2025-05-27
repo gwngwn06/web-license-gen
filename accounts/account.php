@@ -1,5 +1,5 @@
 <?php
-require_once './utils/constants.php';
+require_once './utils/db.php';
 class Account
 {
     public $username;
@@ -21,14 +21,15 @@ class Account
 
     public function loginUser()
     {
+        global $conn;
         if (empty($this->username) || empty($this->password)) {
             return ["status" => "error", "message" => "Email and password are required"];
         }
 
-        $conn = new mysqli("localhost", "root", "", DB_NAME);
-        if ($conn->connect_error) {
-            return ["status" => "error", "message" => "Something went wrong. Please try again later."];
-        }
+        // $conn = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
+        // if ($conn->connect_error) {
+        //     return ["status" => "error", "message" => "Something went wrong. Please try again later."];
+        // }
 
         try {
             $stmt = $conn->prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)");
@@ -49,16 +50,17 @@ class Account
         } catch (Exception $e) {
             return ["status" => "error", "message" => "Something went wrong. Please try again later."];
         } finally {
-            $conn->close();
+            // $conn->close();
         }
     }
 
     public function generateUserToken($userId, $token)
     {
-        $conn = new mysqli("localhost", "root", "", DB_NAME);
-        if ($conn->connect_error) {
-            return ["status" => "error", "message" => "Something went wrong. Please try again later."];
-        }
+        global $conn;
+        // $conn = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
+        // if ($conn->connect_error) {
+        //     return ["status" => "error", "message" => "Something went wrong. Please try again later."];
+        // }
 
         try {
             $stmt = $conn->prepare("INSERT INTO users_tokens (user_id, token) VALUES (?, ?)");
@@ -68,18 +70,19 @@ class Account
         } catch (Exception $e) {
             return ["status" => "error", "message" => "Unable to save user token"];
         } finally {
-            $stmt->close();
-            $conn->close();
+            // $stmt->close();
+            // $conn->close();
         }
     }
 
     public function getUserByToken($token)
     {
+        global $conn;
         $days = 30;
-        $conn = new mysqli("localhost", "root", "", DB_NAME);
-        if ($conn->connect_error) {
-            return ["status" => "error", "message" => "Something went wrong. Please try again later."];
-        }
+        // $conn = new mysqli("localhost", "root", "", DB_NAME);
+        // if ($conn->connect_error) {
+        //     return ["status" => "error", "message" => "Something went wrong. Please try again later."];
+        // }
 
         try {
             $stmt = $conn->prepare("SELECT user_id FROM users_tokens WHERE token = ? AND created_at > NOW() - INTERVAL ? DAY");
@@ -104,8 +107,8 @@ class Account
         } catch (Exception $e) {
             return ["status" => "error", "message" => $e->getMessage()];
         } finally {
-            $stmt->close();
-            $conn->close();
+            // $stmt->close();
+            // $conn->close();
         }
     }
 
@@ -170,7 +173,8 @@ class Account
 
     private function isEmailAlreadyExists()
     {
-        $conn = new mysqli("localhost", "root", "", DB_NAME);
+        global $conn;
+        // $conn = new mysqli("localhost", "root", "", DB_NAME);
         if ($conn->connect_error) {
             return true;
         }
@@ -189,14 +193,15 @@ class Account
                 return false;
             }
         } finally {
-            $stmt->close();
-            $conn->close();
+            // $stmt->close();
+            // $conn->close();
         }
     }
 
     private function isUsernameAlreadyExists()
     {
-        $conn = new mysqli("localhost", "root", "", DB_NAME);
+        global $conn;
+        // $conn = new mysqli("localhost", "root", "", DB_NAME);
         if ($conn->connect_error) {
             return true;
         }
@@ -215,17 +220,18 @@ class Account
                 return false;
             }
         } finally {
-            $stmt->close();
-            $conn->close();
+            // $stmt->close();
+            // $conn->close();
         }
     }
 
     public function registerNewUser()
     {
-        $conn = new mysqli("localhost", "root", "", DB_NAME);
-        if ($conn->connect_error) {
-            return ["status" => "error", "message" => "Something went wrong. Please try again later."];
-        }
+        global $conn;
+        // $conn = new mysqli("localhost", "root", "", DB_NAME);
+        // if ($conn->connect_error) {
+        //     return ["status" => "error", "message" => "Something went wrong. Please try again later."];
+        // }
 
         $hashedPassword = password_hash($this->password, PASSWORD_BCRYPT);
         $conn->begin_transaction();
@@ -250,7 +256,7 @@ class Account
             $conn->rollback();
             return ["status" => "error", "message" => $e->getMessage()];
         } finally {
-            $conn->close();
+            // $conn->close();
         }
     }
 }

@@ -1,16 +1,16 @@
 <?php
-require_once '../utils/constants.php';
+require_once '../utils/db.php';
 
 session_start();
 $currentUser = $_SESSION['current_user'] ?? null;
 
 if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($currentUser)) {
-    $conn = new mysqli("localhost", "root", "", DB_NAME);
-    if ($conn->connect_error) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to save license. Please try again later.']);
-        exit;
-    }
+    // $conn = new mysqli("localhost", "root", "", DB_NAME);
+    // if ($conn->connect_error) {
+    //     http_response_code(500);
+    //     echo json_encode(['error' => 'Failed to save license. Please try again later.']);
+    //     exit;
+    // }
 
     $userId = $currentUser['id'];
     if (!ctype_digit(strval($userId))) {
@@ -50,6 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($currentUser)) {
     } catch (Exception $e) {
         echo json_encode(['error' => 'User not found']);
     } finally {
-        $conn->close();
+        // $conn->close();
     }
 }
