@@ -43,7 +43,7 @@ if (!isset($_SESSION['current_user'])) {
                     <img id="backToHomePage" src="./assets/icons/nexas-america.png" width="110" height="55" />
                     <div class="navbar-brand d-flex flex-column">
                         <div class="text-end fw-medium ms-3" style="color: #0071BC">
-                            Web License Generator
+                            Nexas License Manager
                             <!-- <sup style="font-size: 9px; vertical-align: super">2025</sup> -->
                         </div>
                     </div>
@@ -121,12 +121,12 @@ if (!isset($_SESSION['current_user'])) {
             <div class="d-none d-md-block" style="visibility: hidden;">
             </div>
             <div class="fw-medium fs-2 d-block d-md-none" style="color: #0071BC">
-                License Generator
+                Nexas License Manager
             </div>
 
             <div class="fw-medium fs-2 
                 position-absolute start-50 translate-middle-x 
-                d-none d-md-block" style="color: #0071BC">License Generator</div>
+                d-none d-md-block" style="color: #0071BC">Nexas License Manager</div>
             <div>
                 <input type="file" accept=".dat" id="licenseUpload" class="d-none">
                 <label for="licenseUpload" class="btn btn-sm btn-outline-success rounded-3">
